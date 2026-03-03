@@ -61,6 +61,16 @@ export class HealingOrchestrator {
       maxRetries,
     });
 
+    // Simpan DOM snapshot ke file agar bisa diinspeksi (debugging & dokumentasi TA)
+    let domSnapshotFile: string | undefined;
+    try {
+      domSnapshotFile = await this.store.saveDomSnapshot(context);
+    } catch (err) {
+      logger.warn('[orchestrator] Gagal menyimpan DOM snapshot', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.info(`[orchestrator] Percobaan ${attempt}/${maxRetries}`, {
         selector: descriptor.selector,
@@ -88,13 +98,14 @@ export class HealingOrchestrator {
         });
 
         const result: HealingResult = {
-          testName:   descriptor.testName,
-          filePath:   descriptor.filePath,
-          oldLocator: descriptor.selector,
-          newLocator: candidateSelector,
-          timestamp:  new Date().toISOString(),
-          status:     'healed',
-          retryCount: attempt,
+          testName:       descriptor.testName,
+          filePath:       descriptor.filePath,
+          oldLocator:     descriptor.selector,
+          newLocator:     candidateSelector,
+          timestamp:      new Date().toISOString(),
+          status:         'healed',
+          retryCount:     attempt,
+          domSnapshotFile,
         };
         this.store.add(result);
         return candidateSelector;
@@ -114,13 +125,14 @@ export class HealingOrchestrator {
     });
 
     const failedResult: HealingResult = {
-      testName:   descriptor.testName,
-      filePath:   descriptor.filePath,
-      oldLocator: descriptor.selector,
-      newLocator: '',
-      timestamp:  new Date().toISOString(),
-      status:     'failed',
-      retryCount: maxRetries,
+      testName:       descriptor.testName,
+      filePath:       descriptor.filePath,
+      oldLocator:     descriptor.selector,
+      newLocator:     '',
+      timestamp:      new Date().toISOString(),
+      status:         'failed',
+      retryCount:     maxRetries,
+      domSnapshotFile,
     };
     this.store.add(failedResult);
 

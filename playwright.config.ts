@@ -11,6 +11,13 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  */
 export default defineConfig({
   testDir: './tests',
+  /**
+   * Timeout per test dinaikkan ke 2 menit agar proses self-healing (snapshot +
+   * LLM call + validasi + retry) punya cukup waktu setelah locator gagal.
+   * Default Playwright 30s terlalu singkat karena LLM call saja ~2-5 detik,
+   * dan bisa diulang 3x.
+   */
+  timeout: 120_000,
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

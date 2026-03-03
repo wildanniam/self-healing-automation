@@ -42,6 +42,8 @@ export interface HealingResult {
   /** healed = berhasil di-heal, failed = max retry tercapai, skipped = healing dinonaktifkan */
   status: 'healed' | 'failed' | 'skipped';
   retryCount: number;
+  /** Path ke file HTML snapshot DOM saat kegagalan (untuk debugging & inspeksi) */
+  domSnapshotFile?: string;
 }
 
 /**

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Self-Healing Demo Page</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 24px; }
+    h1   { font-size: 1.4rem; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    label  { display: block; font-size: 0.9rem; margin-bottom: 6px; }
+    input  { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    button { padding: 10px 24px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    #result { margin-top: 20px; padding: 12px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; display: none; }
+  </style>
+</head>
+<body>
+  <h1>Demo Login Form</h1>
+
+  <div class="form-group">
+    <label for="user-email">Email</label>
+    <!--
+      Selector yang BENAR  : #user-email  atau  [name="email"]  atau  [data-testid="input-email"]
+      Selector yang RUSAK  : #username  (sengaja salah untuk trigger healing)
+    -->
+    <input
+      id="user-email"
+      name="email"
+      type="email"
+      data-testid="input-email"
+      placeholder="Masukkan email kamu"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="user-password">Password</label>
+    <!--
+      Selector yang BENAR  : #user-password  atau  [name="password"]  atau  [data-testid="input-password"]
+      Selector yang RUSAK  : #password  (sengaja salah untuk trigger healing)
+    -->
+    <input
+      id="user-password"
+      name="password"
+      type="password"
+      data-testid="input-password"
+      placeholder="Masukkan password kamu"
+    />
+  </div>
+
+  <!--
+    Selector yang BENAR  : #btn-login  atau  [data-testid="btn-login"]
+    Selector yang RUSAK  : #submit-button  (sengaja salah untuk trigger healing)
+  -->
+  <button id="btn-login" data-testid="btn-login" onclick="handleLogin()">
+    Login
+  </button>
+
+  <div id="result">Login berhasil! Self-healing bekerja dengan baik.</div>
+
+  <script>
+    function handleLogin() {
+      document.getElementById('result').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
