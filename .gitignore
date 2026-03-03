@@ -2,6 +2,9 @@
 # Environment variables (jangan pernah di-commit!)
 .env
 
+# Generated healing reports (artifact CI/CD)
+/healing-results/
+
 # Playwright
 node_modules/
 /test-results/
