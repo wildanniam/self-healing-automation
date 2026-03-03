@@ -1,0 +1,21 @@
+{
+  "name": "self-healing",
+  "version": "1.0.0",
+  "description": "**Project Title:** Pengembangan Sistem Self-Healing Test Automation Berbasis Large Language Model (LLM) untuk Meningkatkan Reliabilitas Pengujian dalam CI/CD Pipeline **Author:** Wildan Syukri Niam **Version:** 2.0 (Migration from Katalon to Playwright) **Status:** In Development",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.3.3",
+    "typescript": "^5.9.3"
+  }
+}
