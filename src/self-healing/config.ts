@@ -1,3 +1,25 @@
+// ── GitHub & Git config (dipakai oleh Phase 4) ────────────────────────────────
+
+export interface GitHubConfig {
+  /** Personal Access Token GitHub (Contents + Pull requests: read/write) */
+  token: string;
+  /** Username atau org name pemilik repo (misal: wildanniam) */
+  owner: string;
+  /** Nama repository (misal: self-healing) */
+  repo: string;
+  /** Branch tujuan PR (default: main) */
+  baseBranch: string;
+}
+
+export interface GitBotConfig {
+  /** Nama yang tampil di commit message (default: Self-Healing Bot) */
+  name: string;
+  /** Email yang tampil di commit message */
+  email: string;
+}
+
+// ── Core config (dipakai oleh Phase 1-3) ─────────────────────────────────────
+
 export interface SelfHealingConfig {
   openai: {
     apiKey: string;
@@ -34,6 +56,30 @@ function resolveModel(raw: string): AllowedModel {
     return raw as AllowedModel;
   }
   return 'gpt-4o-mini';
+}
+
+/**
+ * Memuat konfigurasi GitHub untuk Phase 4 (auto-patching & PR).
+ * Melempar Error jika GITHUB_TOKEN / GITHUB_OWNER / GITHUB_REPO tidak tersedia.
+ */
+export function loadGitHubConfig(): GitHubConfig {
+  return {
+    token:      getRequiredEnv('GITHUB_TOKEN'),
+    owner:      getRequiredEnv('GITHUB_OWNER'),
+    repo:       getRequiredEnv('GITHUB_REPO'),
+    baseBranch: getOptionalEnv('GITHUB_BASE_BRANCH', 'main'),
+  };
+}
+
+/**
+ * Memuat konfigurasi Git bot untuk commit message di Phase 4.
+ * Semua nilai opsional — sudah ada fallback default.
+ */
+export function loadGitBotConfig(): GitBotConfig {
+  return {
+    name:  getOptionalEnv('GIT_BOT_NAME',  'Self-Healing Bot'),
+    email: getOptionalEnv('GIT_BOT_EMAIL', 'self-healing-bot@noreply.com'),
+  };
 }
 
 /**
