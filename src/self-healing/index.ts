@@ -1,22 +1,28 @@
 // ── Phase 1: Playwright Wrapper ──────────────────────────────────────────────
-export { PlaywrightWrapper } from './playwright/wrapper';
+export { PlaywrightWrapper }    from './playwright/wrapper';
 
 // ── Phase 2: OpenAI Integration ──────────────────────────────────────────────
-export { LlmClient }         from './openai/llm-client';
-export { cleanDom }          from './openai/dom-cleaner';
-export { buildHealingPrompt } from './openai/prompt-builder';
+export { LlmClient }            from './openai/llm-client';
+export { cleanDom }             from './openai/dom-cleaner';
+export { buildHealingPrompt }   from './openai/prompt-builder';
 
 // ── Phase 3: Healing Core ─────────────────────────────────────────────────────
-export { LocatorValidator }   from './core/locator-validator';
-export { ResultsStore }       from './core/results-store';
+export { LocatorValidator }     from './core/locator-validator';
+export { ResultsStore }         from './core/results-store';
 export { HealingOrchestrator, createHealingWrapper } from './core/healing-orchestrator';
 
+// ── Phase 4: Auto-Patching & GitHub PR ───────────────────────────────────────
+export { patchLocatorInContent, patchTestFile } from './patching/test-file-patcher';
+export { GitService }           from './git/git-service';
+export { GitHubPrService }      from './git/github-pr';
+export { PatchRunner, createPatchRunner } from './patching/patch-runner';
+
 // ── Config ────────────────────────────────────────────────────────────────────
-export { loadConfig }         from './config';
-export type { SelfHealingConfig } from './config';
+export { loadConfig, loadGitHubConfig, loadGitBotConfig } from './config';
+export type { SelfHealingConfig, GitHubConfig, GitBotConfig } from './config';
 
 // ── Logger ────────────────────────────────────────────────────────────────────
-export { logger }             from './logger';
+export { logger }               from './logger';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type {
@@ -27,5 +33,6 @@ export type {
   HealCallback,
 } from './types';
 
-export type { ValidationResult } from './core/locator-validator';
+export type { ValidationResult }             from './core/locator-validator';
 export type { HealingSummary, HealingReport } from './core/results-store';
+export type { PatchResult }                  from './patching/test-file-patcher';
