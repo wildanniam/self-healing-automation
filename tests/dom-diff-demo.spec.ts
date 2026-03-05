@@ -80,7 +80,7 @@ test('dom diff demo — login form healing', async ({ page }) => {
 
   await wrapper.safeFill(
     {
-      selector:  '#user-password',
+      selector:  '[data-testid="input-password"]',
       testName:  'dom diff demo — login form healing',
       filePath:  __filename,
       stepName:  'Isi password',
