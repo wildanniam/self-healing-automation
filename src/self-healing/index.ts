@@ -11,9 +11,19 @@ export { LocatorValidator }   from './core/locator-validator';
 export { ResultsStore }       from './core/results-store';
 export { HealingOrchestrator, createHealingWrapper } from './core/healing-orchestrator';
 
+// ── Phase 4: File Patcher ─────────────────────────────────────────────────────
+export { FilePatcher } from './core/file-patcher';
+export type { PatchResult } from './core/file-patcher';
+
+// ── Phase 4: Git Service & GitLab MR ─────────────────────────────────────────
+export { GitService } from './git/git-service';
+export type { GitResult } from './git/git-service';
+export { GitLabMRCreator } from './git/gitlab-mr-creator';
+export type { MRResult } from './git/gitlab-mr-creator';
+
 // ── Config ────────────────────────────────────────────────────────────────────
-export { loadConfig }         from './config';
-export type { SelfHealingConfig } from './config';
+export { loadConfig, loadGitConfig, loadGitLabConfig } from './config';
+export type { SelfHealingConfig, GitConfig, GitLabConfig } from './config';
 
 // ── Logger ────────────────────────────────────────────────────────────────────
 export { logger }             from './logger';

@@ -36,6 +36,47 @@ function resolveModel(raw: string): AllowedModel {
   return 'gpt-4o-mini';
 }
 
+// ── Git & GitLab Configuration ────────────────────────────────────────────────
+
+export interface GitConfig {
+  /** Prefix nama branch yang dibuat otomatis (default: 'auto-healing') */
+  branchPrefix: string;
+  /** Prefix pesan commit (default: 'chore(self-healing)') */
+  commitMsgPrefix: string;
+}
+
+export interface GitLabConfig {
+  /** Personal Access Token GitLab — GITLAB_PRIVATE_TOKEN (wajib) */
+  privateToken: string;
+  /** Numeric project ID di GitLab — GITLAB_PROJECT_ID (wajib) */
+  projectId: string;
+  /** Base URL GitLab instance (default: https://gitlab.com) */
+  baseUrl: string;
+}
+
+/**
+ * Memuat konfigurasi git dari environment variables.
+ * Semua nilai opsional — ada default yang masuk akal.
+ */
+export function loadGitConfig(): GitConfig {
+  return {
+    branchPrefix:    getOptionalEnv('GITLAB_BRANCH_PREFIX',     'auto-healing'),
+    commitMsgPrefix: getOptionalEnv('GITLAB_COMMIT_MSG_PREFIX', 'chore(self-healing)'),
+  };
+}
+
+/**
+ * Memuat konfigurasi GitLab dari environment variables.
+ * Melempar Error jika GITLAB_PRIVATE_TOKEN atau GITLAB_PROJECT_ID tidak ada.
+ */
+export function loadGitLabConfig(): GitLabConfig {
+  return {
+    privateToken: getRequiredEnv('GITLAB_PRIVATE_TOKEN'),
+    projectId:    getRequiredEnv('GITLAB_PROJECT_ID'),
+    baseUrl:      getOptionalEnv('GITLAB_BASE_URL', 'https://gitlab.com'),
+  };
+}
+
 /**
  * Memuat konfigurasi self-healing dari environment variables.
  * Melempar Error jika OPENAI_API_KEY tidak tersedia.
