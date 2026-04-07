@@ -36,7 +36,7 @@ function resolveModel(raw: string): AllowedModel {
   return 'gpt-4o-mini';
 }
 
-// ── Git & GitLab Configuration ────────────────────────────────────────────────
+// ── Git & GitHub Configuration ────────────────────────────────────────────────
 
 export interface GitConfig {
   /** Prefix nama branch yang dibuat otomatis (default: 'auto-healing') */
@@ -45,13 +45,11 @@ export interface GitConfig {
   commitMsgPrefix: string;
 }
 
-export interface GitLabConfig {
-  /** Personal Access Token GitLab — GITLAB_PRIVATE_TOKEN (wajib) */
-  privateToken: string;
-  /** Numeric project ID di GitLab — GITLAB_PROJECT_ID (wajib) */
-  projectId: string;
-  /** Base URL GitLab instance (default: https://gitlab.com) */
-  baseUrl: string;
+export interface GitHubConfig {
+  /** GitHub token untuk autentikasi API — GITHUB_TOKEN (wajib) */
+  token: string;
+  /** Repo dalam format owner/repo — GITHUB_REPO (wajib, cth: wildanniam/self-healing-automation) */
+  repo: string;
 }
 
 /**
@@ -60,20 +58,19 @@ export interface GitLabConfig {
  */
 export function loadGitConfig(): GitConfig {
   return {
-    branchPrefix:    getOptionalEnv('GITLAB_BRANCH_PREFIX',     'auto-healing'),
-    commitMsgPrefix: getOptionalEnv('GITLAB_COMMIT_MSG_PREFIX', 'chore(self-healing)'),
+    branchPrefix:    getOptionalEnv('GIT_BRANCH_PREFIX',     'auto-healing'),
+    commitMsgPrefix: getOptionalEnv('GIT_COMMIT_MSG_PREFIX', 'chore(self-healing)'),
   };
 }
 
 /**
- * Memuat konfigurasi GitLab dari environment variables.
- * Melempar Error jika GITLAB_PRIVATE_TOKEN atau GITLAB_PROJECT_ID tidak ada.
+ * Memuat konfigurasi GitHub dari environment variables.
+ * Melempar Error jika GITHUB_TOKEN atau GITHUB_REPO tidak ada.
  */
-export function loadGitLabConfig(): GitLabConfig {
+export function loadGitHubConfig(): GitHubConfig {
   return {
-    privateToken: getRequiredEnv('GITLAB_PRIVATE_TOKEN'),
-    projectId:    getRequiredEnv('GITLAB_PROJECT_ID'),
-    baseUrl:      getOptionalEnv('GITLAB_BASE_URL', 'https://gitlab.com'),
+    token: getRequiredEnv('GITHUB_TOKEN'),
+    repo:  getRequiredEnv('GITHUB_REPO'),
   };
 }
 

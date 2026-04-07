@@ -52,6 +52,7 @@ export class HealingOrchestrator {
    * @returns       - Selector baru yang valid, atau null jika semua retry gagal
    */
   async heal(context: HealingContext): Promise<string | null> {
+    const startTime      = Date.now();
     const { descriptor } = context;
     const maxRetries = this.config.healing.maxRetries;
 
@@ -98,14 +99,15 @@ export class HealingOrchestrator {
         });
 
         const result: HealingResult = {
-          testName:       descriptor.testName,
-          filePath:       descriptor.filePath,
-          oldLocator:     descriptor.selector,
-          newLocator:     candidateSelector,
-          timestamp:      new Date().toISOString(),
-          status:         'healed',
-          retryCount:     attempt,
+          testName:          descriptor.testName,
+          filePath:          descriptor.filePath,
+          oldLocator:        descriptor.selector,
+          newLocator:        candidateSelector,
+          timestamp:         new Date().toISOString(),
+          status:            'healed',
+          retryCount:        attempt,
           domSnapshotFile,
+          healingDurationMs: Date.now() - startTime,
         };
         this.store.add(result);
         return candidateSelector;
@@ -125,14 +127,15 @@ export class HealingOrchestrator {
     });
 
     const failedResult: HealingResult = {
-      testName:       descriptor.testName,
-      filePath:       descriptor.filePath,
-      oldLocator:     descriptor.selector,
-      newLocator:     '',
-      timestamp:      new Date().toISOString(),
-      status:         'failed',
-      retryCount:     maxRetries,
+      testName:          descriptor.testName,
+      filePath:          descriptor.filePath,
+      oldLocator:        descriptor.selector,
+      newLocator:        '',
+      timestamp:         new Date().toISOString(),
+      status:            'failed',
+      retryCount:        maxRetries,
       domSnapshotFile,
+      healingDurationMs: Date.now() - startTime,
     };
     this.store.add(failedResult);
 

@@ -1,9 +1,9 @@
 /**
- * Test Git Service & GitLab MR Creator — Milestone 4
+ * Test Git Service & GitHub PR Creator — Milestone 4
  *
  * Strategi testing:
  * - GitService: test menggunakan temp git repo agar tidak menyentuh repo asli
- * - GitLabMRCreator: tidak test API asli — hanya test buildMRDescription() secara unit
+ * - GitHubPRCreator: tidak test API asli — hanya test buildPRDescription() secara unit
  */
 
 import * as path from 'path';
@@ -11,7 +11,7 @@ import * as os from 'os';
 import { promises as fsp } from 'fs';
 import { execSync } from 'child_process';
 import { test, expect } from '@playwright/test';
-import { GitService, GitLabMRCreator } from '../src/self-healing';
+import { GitService, GitHubPRCreator } from '../src/self-healing';
 import type { PatchResult } from '../src/self-healing';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,11 +111,10 @@ test('commitLocal — tidak commit jika semua patchResults gagal', async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // MR Description — format markdown benar
 // ─────────────────────────────────────────────────────────────────────────────
-test('buildMRDescription — menghasilkan tabel markdown yang benar', () => {
-  const mr = new GitLabMRCreator({
-    privateToken: 'dummy',
-    projectId:    '123',
-    baseUrl:      'https://gitlab.com',
+test('buildPRDescription — menghasilkan tabel markdown yang benar', () => {
+  const mr = new GitHubPRCreator({
+    token: 'dummy',
+    repo:  'wildanniam/self-healing-automation',
   });
 
   const patchResults: PatchResult[] = [
@@ -137,7 +136,7 @@ test('buildMRDescription — menghasilkan tabel markdown yang benar', () => {
     },
   ];
 
-  const desc = mr.buildMRDescription(patchResults, 'Login Test');
+  const desc = mr.buildPRDescription(patchResults, 'Login Test');
 
   expect(desc).toContain('Auto-Healing: Login Test');
   expect(desc).toContain('`#username`');
@@ -149,13 +148,12 @@ test('buildMRDescription — menghasilkan tabel markdown yang benar', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MR Description — locator gagal masuk ke seksi "tidak dipatch"
+// PR Description — locator gagal masuk ke seksi "tidak dipatch"
 // ─────────────────────────────────────────────────────────────────────────────
-test('buildMRDescription — locator gagal ditampilkan di seksi terpisah', () => {
-  const mr = new GitLabMRCreator({
-    privateToken: 'dummy',
-    projectId:    '123',
-    baseUrl:      'https://gitlab.com',
+test('buildPRDescription — locator gagal ditampilkan di seksi terpisah', () => {
+  const mr = new GitHubPRCreator({
+    token: 'dummy',
+    repo:  'wildanniam/self-healing-automation',
   });
 
   const patchResults: PatchResult[] = [
@@ -172,7 +170,7 @@ test('buildMRDescription — locator gagal ditampilkan di seksi terpisah', () =>
     },
   ];
 
-  const desc = mr.buildMRDescription(patchResults, 'Login Test');
+  const desc = mr.buildPRDescription(patchResults, 'Login Test');
 
   expect(desc).toContain('Locator yang Tidak Dipatch');
   expect(desc).toContain('`#ghost-element`');

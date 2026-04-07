@@ -44,6 +44,8 @@ export interface HealingResult {
   retryCount: number;
   /** Path ke file HTML snapshot DOM saat kegagalan (untuk debugging & inspeksi) */
   domSnapshotFile?: string;
+  /** Durasi proses healing dalam milidetik — dari deteksi error sampai locator valid/gagal */
+  healingDurationMs?: number;
 }
 
 /**

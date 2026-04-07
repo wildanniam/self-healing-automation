@@ -9,6 +9,14 @@ export interface HealingSummary {
   failed: number;
   skipped: number;
   successRate: string;
+  /** Rata-rata durasi healing dalam ms (hanya dari yang berstatus 'healed') */
+  avgHealingTimeMs: number;
+  /** Durasi healing tercepat dalam ms */
+  fastestHealMs: number;
+  /** Durasi healing terlama dalam ms */
+  slowestHealMs: number;
+  /** Rata-rata jumlah retry ke LLM */
+  avgRetryCount: number;
 }
 
 export interface HealingReport {
@@ -54,13 +62,29 @@ export class ResultsStore {
    * Mengembalikan ringkasan statistik dari semua hasil healing.
    */
   getSummary(): HealingSummary {
-    const healed  = this.results.filter(r => r.status === 'healed').length;
+    const healedResults  = this.results.filter(r => r.status === 'healed');
+    const healed  = healedResults.length;
     const failed  = this.results.filter(r => r.status === 'failed').length;
     const skipped = this.results.filter(r => r.status === 'skipped').length;
     const total   = this.results.length;
     const successRate = total > 0 ? `${((healed / total) * 100).toFixed(1)}%` : 'N/A';
 
-    return { total, healed, failed, skipped, successRate };
+    // Timing stats — hanya dari hasil 'healed' yang punya data durasi
+    const durations = healedResults
+      .map(r => r.healingDurationMs)
+      .filter((d): d is number => d !== undefined && d > 0);
+
+    const avgHealingTimeMs = durations.length > 0
+      ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+      : 0;
+    const fastestHealMs = durations.length > 0 ? Math.min(...durations) : 0;
+    const slowestHealMs = durations.length > 0 ? Math.max(...durations) : 0;
+
+    const avgRetryCount = total > 0
+      ? parseFloat((this.results.reduce((a, r) => a + r.retryCount, 0) / total).toFixed(1))
+      : 0;
+
+    return { total, healed, failed, skipped, successRate, avgHealingTimeMs, fastestHealMs, slowestHealMs, avgRetryCount };
   }
 
   /**
