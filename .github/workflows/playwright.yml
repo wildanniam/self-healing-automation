@@ -21,6 +21,17 @@ jobs:
       run: npx playwright test
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    - name: Configure git identity
+      if: github.event_name == 'push'
+      run: |
+        git config user.email "self-healing-bot@github.com"
+        git config user.name "Self-Healing Bot"
+    - name: Run post-heal (patch + commit + PR)
+      if: github.event_name == 'push'
+      run: npm run post-heal
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPO: ${{ github.repository }}
     - name: Upload Playwright Report
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}

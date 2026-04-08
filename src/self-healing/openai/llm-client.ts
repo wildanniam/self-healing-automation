@@ -4,6 +4,7 @@ import type { SelfHealingConfig } from '../config';
 import { logger } from '../logger';
 import { cleanDom } from './dom-cleaner';
 import { buildHealingPrompt } from './prompt-builder';
+import { saveTrace } from './llm-tracer';
 
 interface LlmLocatorResponse {
   new_locator: string | null;
@@ -58,6 +59,8 @@ export class LlmClient {
   async getHealedLocator(context: HealingContext): Promise<string | null> {
     const cleanedDom = cleanDom(context.domSnapshot, this.config.healing.domMaxChars);
     const prompt = buildHealingPrompt(context, cleanedDom);
+    const startTime = Date.now();
+    const timestamp = new Date().toISOString();
 
     logger.info('[llm-client] Mengirim permintaan ke OpenAI', {
       model: this.config.openai.model,
@@ -65,6 +68,9 @@ export class LlmClient {
       selector: context.descriptor.selector,
       testName: context.descriptor.testName,
     });
+
+    let rawContent = '';
+    let newLocator: string | null = null;
 
     try {
       const response = await this.client.chat.completions.create({
@@ -74,14 +80,14 @@ export class LlmClient {
         temperature: this.config.openai.temperature,
       });
 
-      const rawContent = response.choices[0]?.message?.content ?? '';
+      rawContent = response.choices[0]?.message?.content ?? '';
 
       logger.debug('[llm-client] Respons mentah dari LLM', {
         raw: rawContent,
         selector: context.descriptor.selector,
       });
 
-      const newLocator = parseLocatorResponse(rawContent);
+      newLocator = parseLocatorResponse(rawContent);
 
       if (newLocator) {
         logger.info('[llm-client] LLM berhasil menghasilkan locator baru', {
@@ -94,15 +100,38 @@ export class LlmClient {
           rawResponse: rawContent,
         });
       }
-
-      return newLocator;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('[llm-client] Gagal memanggil OpenAI API', {
         error: errorMessage,
         selector: context.descriptor.selector,
       });
-      return null;
+      rawContent = `[ERROR] ${errorMessage}`;
     }
+
+    // Selalu simpan trace (sukses maupun gagal) untuk transparansi & demo
+    try {
+      const tracePath = saveTrace({
+        timestamp,
+        testName:      context.descriptor.testName,
+        ...(context.descriptor.stepName !== undefined && { stepName: context.descriptor.stepName }),
+        pageUrl:       context.pageUrl,
+        oldLocator:    context.descriptor.selector,
+        errorMessage:  context.errorMessage,
+        model:         this.config.openai.model,
+        domChars:      cleanedDom.length,
+        prompt,
+        rawResponse:   rawContent,
+        parsedLocator: newLocator,
+        durationMs:    Date.now() - startTime,
+      });
+      logger.info('[llm-client] Trace LLM disimpan', { tracePath });
+    } catch (traceErr) {
+      logger.warn('[llm-client] Gagal menyimpan trace LLM', {
+        error: traceErr instanceof Error ? traceErr.message : String(traceErr),
+      });
+    }
+
+    return newLocator;
   }
 }

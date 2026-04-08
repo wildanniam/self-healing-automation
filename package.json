@@ -9,7 +9,8 @@
     "test:debug": "playwright test --debug",
     "type-check": "tsc --noEmit",
     "post-heal": "ts-node scripts/post-heal.ts",
-    "post-heal:dry": "ts-node scripts/post-heal.ts --dry-run"
+    "post-heal:dry": "ts-node scripts/post-heal.ts --dry-run",
+    "demo": "ts-node scripts/demo.ts"
   },
   "keywords": [],
   "author": "",
