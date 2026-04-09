@@ -21,39 +21,64 @@ function prettyHealSuccess(data: Record<string, unknown>): void {
   const ms     = data['durationMs']  as number | undefined;
   const retry  = data['attempt']     as number | undefined;
   const max    = data['maxRetries']  as number | undefined;
+  const tokens = data['tokens']      as number | undefined;
+  const cost   = data['cost']        as string | undefined;
 
   console.log(`\n${SEP}`);
   console.log(` ✅ HEALED  ${old ?? '?'}  →  ${healed ?? '?'}`);
   console.log(`${SEP}`);
-  if (test)  console.log(`  Test    : ${test}`);
-  if (ms)    console.log(`  Waktu   : ${ms.toFixed(0)} ms`);
-  if (retry) console.log(`  Retry   : ${retry}/${max ?? '?'}`);
+  if (test)             console.log(`  Test    : ${test}`);
+  if (ms)               console.log(`  Waktu   : ${ms.toFixed(0)} ms`);
+  if (retry)            console.log(`  Retry   : ${retry}/${max ?? '?'}`);
+  if (tokens)           console.log(`  Tokens  : ${tokens.toLocaleString('en-US')}`);
+  if (cost)             console.log(`  Biaya   : ${cost}`);
   console.log(`${SEP}\n`);
 }
 
 function prettyHealFail(data: Record<string, unknown>): void {
-  const old  = data['oldLocator'] as string | undefined;
-  const max  = data['maxRetries'] as number | undefined;
+  const old    = data['oldLocator'] as string | undefined;
+  const max    = data['maxRetries'] as number | undefined;
+  const tokens = data['tokens']     as number | undefined;
+  const cost   = data['cost']       as string | undefined;
 
   console.log(`\n${SEP}`);
   console.log(` ❌ FAILED  ${old ?? '?'}  (${max ?? 3}x percobaan habis)`);
+  console.log(`${SEP}`);
+  if (tokens) console.log(`  Tokens  : ${tokens.toLocaleString('en-US')}`);
+  if (cost)   console.log(`  Biaya   : ${cost}`);
   console.log(`${SEP}\n`);
 }
 
 function prettySummary(data: Record<string, unknown>): void {
-  const healed = data['healed']      as number | undefined ?? 0;
-  const failed = data['failed']      as number | undefined ?? 0;
-  const rate   = data['successRate'] as string | undefined ?? '0%';
-  const avg    = data['avgMs']       as number | undefined;
+  const healed     = data['healed']            as number | undefined ?? 0;
+  const failed     = data['failed']            as number | undefined ?? 0;
+  const rate       = data['successRate']       as string | undefined ?? '0%';
+  const avg        = data['avgMs']             as number | undefined;
+  const tokens     = data['totalTokens']       as number | undefined;
+  const totalCost  = data['totalCost']         as string | undefined;
+  const totalCostId = data['totalCostIdr']     as string | undefined;
+  const avgCost    = data['avgCostPerLocator'] as string | undefined;
 
   console.log(`\n╔${LINE}╗`);
   console.log(`║         SELF-HEALING SUMMARY                       ║`);
   console.log(`╠${LINE}╣`);
-  console.log(`║  Total Healed  : ${String(healed).padEnd(34)}║`);
-  console.log(`║  Total Failed  : ${String(failed).padEnd(34)}║`);
-  console.log(`║  Success Rate  : ${rate.padEnd(34)}║`);
+  console.log(`║  Total Healed   : ${String(healed).padEnd(33)}║`);
+  console.log(`║  Total Failed   : ${String(failed).padEnd(33)}║`);
+  console.log(`║  Success Rate   : ${rate.padEnd(33)}║`);
   if (avg !== undefined) {
-    console.log(`║  Rata-rata     : ${(avg.toFixed(0) + ' ms / locator').padEnd(34)}║`);
+    console.log(`║  Rata-rata      : ${(avg.toFixed(0) + ' ms / locator').padEnd(33)}║`);
+  }
+  if (tokens !== undefined) {
+    console.log(`║  Total Tokens   : ${tokens.toLocaleString('en-US').padEnd(33)}║`);
+  }
+  if (totalCost) {
+    console.log(`║  Total Biaya    : ${totalCost.padEnd(33)}║`);
+  }
+  if (totalCostId) {
+    console.log(`║  Total (IDR)    : ${totalCostId.padEnd(33)}║`);
+  }
+  if (avgCost) {
+    console.log(`║  Per Locator    : ${avgCost.padEnd(33)}║`);
   }
   console.log(`╚${LINE}╝\n`);
 }
@@ -102,10 +127,13 @@ function log(level: LogLevel, message: string, data?: Record<string, unknown>): 
   if (message.includes('[dom-cleaner]'))  return;
   if (message.includes('[prompt-builder]')) return;
 
-  // Tampilkan path trace LLM agar dosen bisa cek input/output mentah
-  if (message.includes('Trace LLM disimpan')) {
-    const p = (data ?? {})['tracePath'];
-    if (p) console.log(`    📄  Trace tersimpan: ${p}`);
+  // Tampilkan path HTML trace report sekali di akhir test run
+  if (message.includes('Trace report HTML disimpan')) {
+    const p = (data ?? {})['path'];
+    if (p) {
+      console.log(`\n📊  Trace report → ${p}`);
+      console.log(`    Buka di browser untuk lihat detail input/output LLM\n`);
+    }
     return;
   }
 

@@ -3,6 +3,7 @@ import type { HealingContext, HealingResult } from '../types';
 import type { SelfHealingConfig } from '../config';
 import { loadConfig } from '../config';
 import { LlmClient } from '../openai/llm-client';
+import { formatCost } from '../openai/pricing';
 import { PlaywrightWrapper } from '../playwright/wrapper';
 import { LocatorValidator } from './locator-validator';
 import { ResultsStore } from './results-store';
@@ -72,13 +73,22 @@ export class HealingOrchestrator {
       });
     }
 
+    // Akumulasi token & biaya dari semua retry pada healing call ini
+    let totalTokens   = 0;
+    let totalCostUsd  = 0;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.info(`[orchestrator] Percobaan ${attempt}/${maxRetries}`, {
         selector: descriptor.selector,
       });
 
       // Step 1: Minta LLM menghasilkan kandidat locator baru
-      const candidateSelector = await this.llmClient.getHealedLocator(context);
+      const llmResult = await this.llmClient.getHealedLocator(context);
+      const candidateSelector = llmResult.locator;
+      if (llmResult.usage) {
+        totalTokens  += llmResult.usage.totalTokens;
+        totalCostUsd += llmResult.usage.costUsd;
+      }
 
       if (!candidateSelector) {
         logger.warn(`[orchestrator] LLM tidak menghasilkan kandidat (percobaan ${attempt}/${maxRetries})`, {
@@ -91,11 +101,16 @@ export class HealingOrchestrator {
       const validation = await this.validator.validate(candidateSelector);
 
       if (validation.isValid) {
-        logger.info('[orchestrator] ✓ Healing berhasil!', {
+        logger.info('[orchestrator] Locator healed', {
           oldLocator:   descriptor.selector,
           newLocator:   candidateSelector,
+          testName:     descriptor.testName,
+          durationMs:   Date.now() - startTime,
           attempt,
+          maxRetries,
           elementCount: validation.elementCount,
+          tokens:       totalTokens,
+          cost:         formatCost(totalCostUsd),
         });
 
         const result: HealingResult = {
@@ -108,6 +123,8 @@ export class HealingOrchestrator {
           retryCount:        attempt,
           domSnapshotFile,
           healingDurationMs: Date.now() - startTime,
+          totalTokens,
+          costUsd:           totalCostUsd,
         };
         this.store.add(result);
         return candidateSelector;
@@ -120,10 +137,12 @@ export class HealingOrchestrator {
     }
 
     // Semua percobaan habis tanpa hasil
-    logger.error('[orchestrator] ✗ Healing gagal — semua percobaan habis', {
-      selector:  descriptor.selector,
-      testName:  descriptor.testName,
+    logger.error('[orchestrator] Healing failed — Max retries exhausted', {
+      oldLocator: descriptor.selector,
+      testName:   descriptor.testName,
       maxRetries,
+      tokens:     totalTokens,
+      cost:       formatCost(totalCostUsd),
     });
 
     const failedResult: HealingResult = {
@@ -136,6 +155,8 @@ export class HealingOrchestrator {
       retryCount:        maxRetries,
       domSnapshotFile,
       healingDurationMs: Date.now() - startTime,
+      totalTokens,
+      costUsd:           totalCostUsd,
     };
     this.store.add(failedResult);
 

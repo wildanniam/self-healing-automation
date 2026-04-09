@@ -11,7 +11,8 @@
  *   npm run demo
  */
 
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import 'dotenv/config';
 
@@ -89,6 +90,24 @@ async function main(): Promise<void> {
 
   separator('DEMO SELESAI');
   console.log(`✅  Semua langkah demo telah selesai dijalankan.\n`);
+
+  // ── Step 3: Auto-open HTML trace report ────────────────────────────────────
+  const reportPath = path.join(ROOT, 'healing-results', 'trace-report.html');
+  if (fs.existsSync(reportPath)) {
+    console.log(`📊  Membuka trace report di browser...`);
+    try {
+      if (process.platform === 'darwin') {
+        execSync(`open "${reportPath}"`);
+      } else if (process.platform === 'win32') {
+        execSync(`start "" "${reportPath}"`);
+      } else {
+        execSync(`xdg-open "${reportPath}"`);
+      }
+      console.log(`    ${reportPath}\n`);
+    } catch {
+      console.log(`    (gagal auto-open, buka manual: ${reportPath})\n`);
+    }
+  }
 }
 
 main().catch(err => {

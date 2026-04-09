@@ -4,10 +4,21 @@ import type { SelfHealingConfig } from '../config';
 import { logger } from '../logger';
 import { cleanDom } from './dom-cleaner';
 import { buildHealingPrompt } from './prompt-builder';
-import { saveTrace } from './llm-tracer';
+import { appendTrace } from './llm-tracer';
+import { calculateCost, formatCost } from './pricing';
 
 interface LlmLocatorResponse {
   new_locator: string | null;
+}
+
+export interface LlmCallResult {
+  locator: string | null;
+  usage?: {
+    promptTokens:     number;
+    completionTokens: number;
+    totalTokens:      number;
+    costUsd:          number;
+  };
 }
 
 /**
@@ -56,7 +67,7 @@ export class LlmClient {
    * @param context - Konteks kegagalan dari wrapper (termasuk domSnapshot)
    * @returns       - Selector baru sebagai string, atau null jika LLM tidak menemukan
    */
-  async getHealedLocator(context: HealingContext): Promise<string | null> {
+  async getHealedLocator(context: HealingContext): Promise<LlmCallResult> {
     const cleanedDom = cleanDom(context.domSnapshot, this.config.healing.domMaxChars);
     const prompt = buildHealingPrompt(context, cleanedDom);
     const startTime = Date.now();
@@ -71,6 +82,10 @@ export class LlmClient {
 
     let rawContent = '';
     let newLocator: string | null = null;
+    let promptTokens:     number | undefined;
+    let completionTokens: number | undefined;
+    let totalTokens:      number | undefined;
+    let costUsd:          number | undefined;
 
     try {
       const response = await this.client.chat.completions.create({
@@ -81,6 +96,14 @@ export class LlmClient {
       });
 
       rawContent = response.choices[0]?.message?.content ?? '';
+
+      // Capture token usage & hitung biaya
+      if (response.usage) {
+        promptTokens     = response.usage.prompt_tokens;
+        completionTokens = response.usage.completion_tokens;
+        totalTokens      = response.usage.total_tokens;
+        costUsd          = calculateCost(this.config.openai.model, promptTokens, completionTokens);
+      }
 
       logger.debug('[llm-client] Respons mentah dari LLM', {
         raw: rawContent,
@@ -93,6 +116,8 @@ export class LlmClient {
         logger.info('[llm-client] LLM berhasil menghasilkan locator baru', {
           oldLocator: context.descriptor.selector,
           newLocator,
+          ...(totalTokens !== undefined && { tokens: totalTokens }),
+          ...(costUsd !== undefined     && { cost:   formatCost(costUsd) }),
         });
       } else {
         logger.warn('[llm-client] LLM tidak menemukan locator pengganti', {
@@ -109,9 +134,10 @@ export class LlmClient {
       rawContent = `[ERROR] ${errorMessage}`;
     }
 
-    // Selalu simpan trace (sukses maupun gagal) untuk transparansi & demo
+    // Selalu append trace (sukses maupun gagal) — di-aggregate jadi
+    // HTML report di akhir test run oleh results-store.
     try {
-      const tracePath = saveTrace({
+      appendTrace({
         timestamp,
         testName:      context.descriptor.testName,
         ...(context.descriptor.stepName !== undefined && { stepName: context.descriptor.stepName }),
@@ -124,14 +150,26 @@ export class LlmClient {
         rawResponse:   rawContent,
         parsedLocator: newLocator,
         durationMs:    Date.now() - startTime,
+        ...(promptTokens     !== undefined && { promptTokens     }),
+        ...(completionTokens !== undefined && { completionTokens }),
+        ...(totalTokens      !== undefined && { totalTokens      }),
+        ...(costUsd          !== undefined && { costUsd          }),
       });
-      logger.info('[llm-client] Trace LLM disimpan', { tracePath });
     } catch (traceErr) {
       logger.warn('[llm-client] Gagal menyimpan trace LLM', {
         error: traceErr instanceof Error ? traceErr.message : String(traceErr),
       });
     }
 
-    return newLocator;
+    const result: LlmCallResult = { locator: newLocator };
+    if (
+      promptTokens     !== undefined &&
+      completionTokens !== undefined &&
+      totalTokens      !== undefined &&
+      costUsd          !== undefined
+    ) {
+      result.usage = { promptTokens, completionTokens, totalTokens, costUsd };
+    }
+    return result;
   }
 }

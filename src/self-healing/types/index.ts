@@ -46,6 +46,10 @@ export interface HealingResult {
   domSnapshotFile?: string;
   /** Durasi proses healing dalam milidetik — dari deteksi error sampai locator valid/gagal */
   healingDurationMs?: number;
+  /** Total token (input + output) yang dipakai untuk healing locator ini (akumulatif dari semua retry) */
+  totalTokens?: number;
+  /** Total biaya USD untuk healing locator ini (akumulatif dari semua retry) */
+  costUsd?: number;
 }
 
 /**

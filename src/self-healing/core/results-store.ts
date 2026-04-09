@@ -2,6 +2,8 @@ import { promises as fsp } from 'fs';
 import * as path from 'path';
 import type { HealingContext, HealingResult } from '../types';
 import { logger } from '../logger';
+import { generateHtmlReport } from '../openai/llm-tracer';
+import { formatCost, formatCostIdr } from '../openai/pricing';
 
 export interface HealingSummary {
   total: number;
@@ -17,6 +19,12 @@ export interface HealingSummary {
   slowestHealMs: number;
   /** Rata-rata jumlah retry ke LLM */
   avgRetryCount: number;
+  /** Total token (input + output) yang dipakai untuk semua healing call */
+  totalTokens: number;
+  /** Total biaya dalam USD untuk semua healing call */
+  totalCostUsd: number;
+  /** Rata-rata biaya per locator dalam USD */
+  avgCostPerLocatorUsd: number;
 }
 
 export interface HealingReport {
@@ -84,7 +92,16 @@ export class ResultsStore {
       ? parseFloat((this.results.reduce((a, r) => a + r.retryCount, 0) / total).toFixed(1))
       : 0;
 
-    return { total, healed, failed, skipped, successRate, avgHealingTimeMs, fastestHealMs, slowestHealMs, avgRetryCount };
+    // Token & cost stats — agregat dari semua healing call (sukses & gagal)
+    const totalTokens          = this.results.reduce((a, r) => a + (r.totalTokens ?? 0), 0);
+    const totalCostUsd         = this.results.reduce((a, r) => a + (r.costUsd     ?? 0), 0);
+    const avgCostPerLocatorUsd = total > 0 ? totalCostUsd / total : 0;
+
+    return {
+      total, healed, failed, skipped, successRate,
+      avgHealingTimeMs, fastestHealMs, slowestHealMs, avgRetryCount,
+      totalTokens, totalCostUsd, avgCostPerLocatorUsd,
+    };
   }
 
   /**
@@ -113,6 +130,19 @@ export class ResultsStore {
       failed:      summary.failed,
       successRate: summary.successRate,
     });
+
+    // Generate HTML trace report dari semua LLM call yang sudah di-append
+    // ke healing-results/llm-traces.jsonl selama test run.
+    try {
+      const htmlPath = generateHtmlReport(path.join(dir, 'trace-report.html'));
+      if (htmlPath) {
+        logger.info('[results-store] Trace report HTML disimpan', { path: htmlPath });
+      }
+    } catch (err) {
+      logger.warn('[results-store] Gagal generate trace report HTML', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   /**
@@ -173,6 +203,11 @@ export class ResultsStore {
       failed:      s.failed,
       skipped:     s.skipped,
       successRate: s.successRate,
+      avgMs:       s.avgHealingTimeMs,
+      totalTokens: s.totalTokens,
+      totalCost:   formatCost(s.totalCostUsd),
+      totalCostIdr: formatCostIdr(s.totalCostUsd),
+      avgCostPerLocator: formatCost(s.avgCostPerLocatorUsd),
     });
   }
 }
