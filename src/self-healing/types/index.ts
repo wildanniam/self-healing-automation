@@ -1,4 +1,10 @@
 /**
+ * Jenis aksi Playwright yang gagal — dipakai oleh DOM context extractor
+ * untuk memprioritaskan kandidat elemen yang relevan.
+ */
+export type ActionType = 'click' | 'fill' | 'select' | 'getText' | 'waitForVisible' | 'isVisible';
+
+/**
  * Descriptor yang menggambarkan sebuah locator di dalam test.
  * Dipakai oleh wrapper dan healing engine untuk mengidentifikasi
  * elemen mana yang gagal dan perlu di-heal.
@@ -27,6 +33,8 @@ export interface HealingContext {
   pageUrl: string;
   /** Snapshot HTML DOM saat kegagalan (dipakai oleh LLM di Phase 2) */
   domSnapshot: string;
+  /** Jenis aksi yang gagal — dipakai untuk ranking kandidat elemen */
+  actionType: ActionType;
 }
 
 /**

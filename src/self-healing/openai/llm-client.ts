@@ -1,9 +1,10 @@
 import OpenAI from 'openai';
 import type { HealingContext } from '../types';
 import type { SelfHealingConfig } from '../config';
+import type { CandidateElement } from './dom-context-extractor';
 import { logger } from '../logger';
 import { cleanDom } from './dom-cleaner';
-import { buildHealingPrompt } from './prompt-builder';
+import { buildHealingPrompt, buildCandidatePrompt } from './prompt-builder';
 import { appendTrace } from './llm-tracer';
 import { calculateCost, formatCost } from './pricing';
 
@@ -64,12 +65,30 @@ export class LlmClient {
   /**
    * Mengirim HealingContext ke LLM dan mengembalikan selector baru.
    *
-   * @param context - Konteks kegagalan dari wrapper (termasuk domSnapshot)
-   * @returns       - Selector baru sebagai string, atau null jika LLM tidak menemukan
+   * Jika candidates diberikan, prompt dibangun dari kandidat elemen (targeted context).
+   * Jika tidak, fallback ke cleaned DOM (perilaku lama).
+   *
+   * @param context    - Konteks kegagalan dari wrapper (termasuk domSnapshot)
+   * @param candidates - Opsional: kandidat elemen dari DOM context extractor
+   * @returns          - Selector baru sebagai string, atau null jika LLM tidak menemukan
    */
-  async getHealedLocator(context: HealingContext): Promise<LlmCallResult> {
+  async getHealedLocator(
+    context: HealingContext,
+    candidates?: CandidateElement[],
+  ): Promise<LlmCallResult> {
     const cleanedDom = cleanDom(context.domSnapshot, this.config.healing.domMaxChars);
-    const prompt = buildHealingPrompt(context, cleanedDom);
+
+    let prompt: string;
+    if (candidates && candidates.length > 0) {
+      // Threshold: 1-4 kandidat → tambahkan supplement cleaned DOM terbatas
+      const supplement = candidates.length < 5
+        ? cleanDom(context.domSnapshot, Math.floor(this.config.healing.domMaxChars / 2))
+        : undefined;
+      prompt = buildCandidatePrompt(context, candidates, supplement);
+    } else {
+      // Fallback: 0 kandidat → pakai full cleaned DOM lama
+      prompt = buildHealingPrompt(context, cleanedDom);
+    }
     const startTime = Date.now();
     const timestamp = new Date().toISOString();
 

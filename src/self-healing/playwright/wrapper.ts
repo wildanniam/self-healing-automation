@@ -4,6 +4,7 @@ import type {
   HealingContext,
   WrapperOptions,
   HealCallback,
+  ActionType,
 } from '../types';
 import { logger } from '../logger';
 
@@ -36,6 +37,24 @@ export class PlaywrightWrapper {
     } catch {
       return '';
     }
+  }
+
+  /**
+   * Membuat HealingContext lengkap dari error yang terjadi.
+   */
+  private async buildHealingContext(
+    descriptor: LocatorDescriptor,
+    errorMessage: string,
+    actionType: ActionType,
+  ): Promise<HealingContext> {
+    const domSnapshot = await this.captureSnapshot();
+    return {
+      descriptor,
+      errorMessage,
+      pageUrl: this.page.url(),
+      domSnapshot,
+      actionType,
+    };
   }
 
   /**
@@ -85,14 +104,7 @@ export class PlaywrightWrapper {
         error: errorMessage,
       });
 
-      const domSnapshot = await this.captureSnapshot();
-      const context: HealingContext = {
-        descriptor,
-        errorMessage,
-        pageUrl: this.page.url(),
-        domSnapshot,
-      };
-
+      const context = await this.buildHealingContext(descriptor, errorMessage, 'click');
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
@@ -132,14 +144,7 @@ export class PlaywrightWrapper {
         error: errorMessage,
       });
 
-      const domSnapshot = await this.captureSnapshot();
-      const context: HealingContext = {
-        descriptor,
-        errorMessage,
-        pageUrl: this.page.url(),
-        domSnapshot,
-      };
-
+      const context = await this.buildHealingContext(descriptor, errorMessage, 'fill');
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
@@ -178,14 +183,7 @@ export class PlaywrightWrapper {
         error: errorMessage,
       });
 
-      const domSnapshot = await this.captureSnapshot();
-      const context: HealingContext = {
-        descriptor,
-        errorMessage,
-        pageUrl: this.page.url(),
-        domSnapshot,
-      };
-
+      const context = await this.buildHealingContext(descriptor, errorMessage, 'select');
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
@@ -220,14 +218,7 @@ export class PlaywrightWrapper {
         error: errorMessage,
       });
 
-      const domSnapshot = await this.captureSnapshot();
-      const context: HealingContext = {
-        descriptor,
-        errorMessage,
-        pageUrl: this.page.url(),
-        domSnapshot,
-      };
-
+      const context = await this.buildHealingContext(descriptor, errorMessage, 'getText');
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
@@ -261,14 +252,7 @@ export class PlaywrightWrapper {
         error: errorMessage,
       });
 
-      const domSnapshot = await this.captureSnapshot();
-      const context: HealingContext = {
-        descriptor,
-        errorMessage,
-        pageUrl: this.page.url(),
-        domSnapshot,
-      };
-
+      const context = await this.buildHealingContext(descriptor, errorMessage, 'waitForVisible');
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {

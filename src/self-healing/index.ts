@@ -4,7 +4,11 @@ export { PlaywrightWrapper } from './playwright/wrapper';
 // ── Phase 2: OpenAI Integration ──────────────────────────────────────────────
 export { LlmClient }         from './openai/llm-client';
 export { cleanDom }          from './openai/dom-cleaner';
-export { buildHealingPrompt } from './openai/prompt-builder';
+export { buildHealingPrompt, buildCandidatePrompt } from './openai/prompt-builder';
+export { extractCandidates, formatCandidatesForPrompt } from './openai/dom-context-extractor';
+export type { CandidateElement, ExtractionOptions } from './openai/dom-context-extractor';
+export { rankCandidates }    from './openai/candidate-ranker';
+export type { RankedCandidate, RankingContext } from './openai/candidate-ranker';
 
 // ── Phase 3: Healing Core ─────────────────────────────────────────────────────
 export { LocatorValidator }   from './core/locator-validator';
@@ -34,6 +38,7 @@ export { logger }             from './logger';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type {
+  ActionType,
   LocatorDescriptor,
   HealingContext,
   HealingResult,

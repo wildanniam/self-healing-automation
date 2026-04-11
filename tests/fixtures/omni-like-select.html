@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniX-like Select & Combobox</title>
+  <style>
+    .ant-form { max-width: 500px; margin: 20px auto; }
+    .ant-form-item { margin-bottom: 16px; }
+    .ant-form-item-label { display: block; margin-bottom: 4px; font-weight: 500; }
+    .ant-select { width: 100%; }
+    .ant-select-selector { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; display: flex; align-items: center; cursor: pointer; }
+    .ant-select-selection-search { flex: 1; }
+    .ant-select-selection-search-input { border: none; outline: none; width: 100%; }
+    .ant-select-arrow { margin-left: 8px; }
+    .ant-input { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; box-sizing: border-box; }
+    .ant-btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; border: 1px solid #d9d9d9; }
+    .ant-btn-primary { background: #1677ff; color: white; border-color: #1677ff; }
+    .ant-switch { position: relative; display: inline-block; width: 44px; height: 22px; border-radius: 11px; background: #ccc; cursor: pointer; }
+    .ant-switch-checked { background: #1677ff; }
+    .ant-radio-group { display: flex; gap: 12px; }
+    .ant-radio-wrapper { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="ant-layout">
+    <div class="ant-layout-content" style="padding: 24px;">
+
+      <h1>Create Campaign</h1>
+
+      <form class="ant-form ant-form-vertical">
+
+        <!-- Standard select -->
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="campaign-type">Campaign Type</label>
+          <div class="ant-form-item-control">
+            <select
+              data-eval-target="campaign-type-select"
+              class="ant-select"
+              id="campaign-type"
+              name="campaignType"
+              aria-label="Campaign type"
+              data-testid="select-campaign-type"
+            >
+              <option value="">Select type</option>
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="push">Push Notification</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ant Design-like combobox (searchable select) -->
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="target-audience">Target Audience</label>
+          <div class="ant-form-item-control">
+            <div class="ant-select ant-select-show-search" data-testid="select-audience">
+              <div class="ant-select-selector">
+                <span class="ant-select-selection-search">
+                  <input
+                    data-eval-target="audience-combobox"
+                    class="ant-select-selection-search-input"
+                    id="target-audience"
+                    role="combobox"
+                    aria-label="Target audience"
+                    placeholder="Search audience..."
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                  />
+                </span>
+              </div>
+              <span class="ant-select-arrow">&#9660;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text input -->
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="campaign-name">Campaign Name</label>
+          <div class="ant-form-item-control">
+            <input
+              data-eval-target="campaign-name-input"
+              class="ant-input"
+              id="campaign-name"
+              name="campaignName"
+              placeholder="Enter campaign name"
+              data-testid="input-campaign-name"
+            />
+          </div>
+        </div>
+
+        <!-- Switch toggle -->
+        <div class="ant-form-item">
+          <label class="ant-form-item-label">Active</label>
+          <div class="ant-form-item-control">
+            <button
+              data-eval-target="active-switch"
+              class="ant-switch"
+              role="switch"
+              aria-checked="false"
+              aria-label="Toggle active status"
+              data-testid="switch-active"
+              type="button"
+            ></button>
+          </div>
+        </div>
+
+        <!-- Radio group -->
+        <div class="ant-form-item">
+          <label class="ant-form-item-label">Priority</label>
+          <div class="ant-form-item-control">
+            <div class="ant-radio-group" role="radiogroup" aria-label="Campaign priority">
+              <label class="ant-radio-wrapper">
+                <input
+                  data-eval-target="priority-low"
+                  type="radio"
+                  class="ant-radio-input"
+                  name="priority"
+                  value="low"
+                />
+                <span>Low</span>
+              </label>
+              <label class="ant-radio-wrapper">
+                <input
+                  data-eval-target="priority-medium"
+                  type="radio"
+                  class="ant-radio-input"
+                  name="priority"
+                  value="medium"
+                />
+                <span>Medium</span>
+              </label>
+              <label class="ant-radio-wrapper">
+                <input
+                  data-eval-target="priority-high"
+                  type="radio"
+                  class="ant-radio-input"
+                  name="priority"
+                  value="high"
+                />
+                <span>High</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Icon button (aria-label only) -->
+        <div class="ant-form-item">
+          <button
+            data-eval-target="settings-icon-btn"
+            class="ant-btn"
+            type="button"
+            aria-label="Campaign settings"
+            title="Settings"
+          >
+            <span role="img" aria-label="setting">&#9881;</span>
+          </button>
+        </div>
+
+        <!-- Negative case: custom clickable div tanpa role -->
+        <div
+          data-eval-target="negative-clickable-div"
+          class="custom-card"
+          style="padding: 12px; border: 1px solid #d9d9d9; border-radius: 6px; cursor: pointer;"
+          onclick="alert('clicked')"
+        >
+          Click me (no role, no aria)
+        </div>
+
+        <div class="ant-form-item" style="margin-top: 16px;">
+          <button
+            data-eval-target="submit-button"
+            class="ant-btn ant-btn-primary"
+            type="submit"
+            data-testid="btn-submit-campaign"
+          >Create Campaign</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</body>
+</html>

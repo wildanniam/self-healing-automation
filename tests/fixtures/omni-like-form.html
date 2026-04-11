@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniX-like Form</title>
+  <style>
+    .ant-form { max-width: 400px; margin: 20px auto; }
+    .ant-form-item { margin-bottom: 16px; }
+    .ant-form-item-label { display: block; margin-bottom: 4px; font-weight: 500; }
+    .ant-input { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
+    .ant-btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; border: 1px solid #d9d9d9; }
+    .ant-btn-primary { background: #1677ff; color: white; border-color: #1677ff; }
+    .ant-btn-default { background: white; }
+    .ant-input-password { position: relative; }
+    .ant-input-password .ant-input { padding-right: 36px; }
+    .ant-input-password-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="ant-layout">
+    <div class="ant-layout-content" style="padding: 24px;">
+
+      <!-- Login Form -->
+      <div class="ant-card">
+        <div class="ant-card-head"><div class="ant-card-head-title">Login</div></div>
+        <div class="ant-card-body">
+          <form class="ant-form ant-form-vertical" id="login-form">
+
+            <div class="ant-form-item">
+              <label class="ant-form-item-label" for="user-email">Email</label>
+              <div class="ant-form-item-control">
+                <input
+                  data-eval-target="email-input"
+                  class="ant-input"
+                  id="user-email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  aria-label="Email address"
+                />
+              </div>
+            </div>
+
+            <div class="ant-form-item">
+              <label class="ant-form-item-label" for="user-password">Password</label>
+              <div class="ant-form-item-control">
+                <div class="ant-input-password">
+                  <input
+                    data-eval-target="password-input"
+                    class="ant-input"
+                    id="user-password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    aria-label="Password"
+                  />
+                  <span class="ant-input-password-icon" role="button" aria-label="Toggle password visibility">
+                    <span aria-label="eye" role="img">&#128065;</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ant-form-item">
+              <label class="ant-form-item-label" for="user-role">Role</label>
+              <div class="ant-form-item-control">
+                <select
+                  data-eval-target="role-select"
+                  class="ant-select"
+                  id="user-role"
+                  name="role"
+                  aria-label="User role"
+                >
+                  <option value="">Select role</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">User</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="ant-form-item">
+              <div class="ant-form-item-control">
+                <label>
+                  <input
+                    data-eval-target="remember-checkbox"
+                    type="checkbox"
+                    class="ant-checkbox-input"
+                    name="remember"
+                  />
+                  <span class="ant-checkbox-label">Remember me</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="ant-form-item">
+              <button
+                data-eval-target="login-button"
+                class="ant-btn ant-btn-primary"
+                id="btn-login"
+                type="submit"
+              >Login</button>
+              <button
+                data-eval-target="reset-button"
+                class="ant-btn ant-btn-default"
+                type="reset"
+                style="margin-left: 8px;"
+              >Reset</button>
+            </div>
+
+            <div class="ant-form-item">
+              <a
+                data-eval-target="forgot-password-link"
+                href="/forgot-password"
+                class="ant-typography"
+              >Forgot password?</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- Noise: unrelated sidebar -->
+      <aside style="margin-top: 24px;">
+        <div class="ant-menu ant-menu-vertical">
+          <li class="ant-menu-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="ant-menu-item"><a href="/settings">Settings</a></li>
+          <li class="ant-menu-item"><a href="/help">Help</a></li>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</body>
+</html>

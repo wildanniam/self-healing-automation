@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniX-like Modal</title>
+  <style>
+    .ant-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; }
+    .ant-modal-wrap { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .ant-modal { background: white; border-radius: 8px; width: 520px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+    .ant-modal-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; }
+    .ant-modal-title { font-size: 16px; font-weight: 600; }
+    .ant-modal-body { padding: 24px; }
+    .ant-modal-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; text-align: right; }
+    .ant-form-item { margin-bottom: 16px; }
+    .ant-form-item-label { display: block; margin-bottom: 4px; font-weight: 500; }
+    .ant-input { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; }
+    .ant-btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; border: 1px solid #d9d9d9; }
+    .ant-btn-primary { background: #1677ff; color: white; border-color: #1677ff; }
+    .ant-btn-default { background: white; }
+    .ant-input-number { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="ant-layout">
+    <div class="ant-layout-content" style="padding: 24px;">
+
+      <!-- Background page content -->
+      <h1>Product Management</h1>
+      <button class="ant-btn ant-btn-primary" id="btn-add-product">Add Product</button>
+
+      <table class="ant-table">
+        <thead><tr><th>Name</th><th>Price</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>Widget A</td><td>$10</td><td><button class="ant-btn">Edit</button></td></tr>
+          <tr><td>Widget B</td><td>$20</td><td><button class="ant-btn">Edit</button></td></tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- Modal overlay -->
+  <div class="ant-modal-mask"></div>
+  <div class="ant-modal-wrap" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="ant-modal">
+      <div class="ant-modal-header">
+        <span class="ant-modal-title" id="modal-title">Add New Product</span>
+      </div>
+      <div class="ant-modal-body">
+        <form class="ant-form ant-form-vertical">
+
+          <div class="ant-form-item">
+            <label class="ant-form-item-label" for="product-name">Product Name</label>
+            <div class="ant-form-item-control">
+              <input
+                data-eval-target="product-name-input"
+                class="ant-input"
+                id="product-name"
+                name="productName"
+                placeholder="Enter product name"
+                data-testid="input-product-name"
+              />
+            </div>
+          </div>
+
+          <div class="ant-form-item">
+            <label class="ant-form-item-label" for="product-price">Price</label>
+            <div class="ant-form-item-control">
+              <input
+                data-eval-target="product-price-input"
+                class="ant-input-number"
+                id="product-price"
+                name="price"
+                type="number"
+                placeholder="0.00"
+                data-testid="input-product-price"
+              />
+            </div>
+          </div>
+
+          <div class="ant-form-item">
+            <label class="ant-form-item-label" for="product-desc">Description</label>
+            <div class="ant-form-item-control">
+              <textarea
+                data-eval-target="product-desc-textarea"
+                class="ant-input"
+                id="product-desc"
+                name="description"
+                placeholder="Enter description"
+                rows="3"
+                data-testid="input-product-desc"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="ant-form-item">
+            <label class="ant-form-item-label" for="product-category">Category</label>
+            <div class="ant-form-item-control">
+              <select
+                data-eval-target="product-category-select"
+                class="ant-select"
+                id="product-category"
+                name="category"
+                data-testid="select-product-category"
+              >
+                <option value="">Select category</option>
+                <option value="electronics">Electronics</option>
+                <option value="clothing">Clothing</option>
+                <option value="food">Food</option>
+              </select>
+            </div>
+          </div>
+
+        </form>
+      </div>
+      <div class="ant-modal-footer">
+        <button
+          data-eval-target="modal-cancel-button"
+          class="ant-btn ant-btn-default"
+          data-testid="btn-modal-cancel"
+        >Cancel</button>
+        <button
+          data-eval-target="modal-save-button"
+          class="ant-btn ant-btn-primary"
+          data-testid="btn-modal-save"
+          style="margin-left: 8px;"
+        >Save</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

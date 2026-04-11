@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniX-like Drawer</title>
+  <style>
+    .ant-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 400px; background: white; box-shadow: -6px 0 16px rgba(0,0,0,0.08); z-index: 1000; }
+    .ant-drawer-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    .ant-drawer-title { font-size: 16px; font-weight: 600; }
+    .ant-drawer-body { padding: 24px; }
+    .ant-drawer-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; text-align: right; }
+    .ant-drawer-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; }
+    .ant-form-item { margin-bottom: 16px; }
+    .ant-form-item-label { display: block; margin-bottom: 4px; font-weight: 500; }
+    .ant-input { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; box-sizing: border-box; }
+    .ant-picker { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; box-sizing: border-box; }
+    .ant-btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; border: 1px solid #d9d9d9; }
+    .ant-btn-primary { background: #1677ff; color: white; border-color: #1677ff; }
+    .ant-btn-default { background: white; }
+    .ant-btn-close { border: none; background: none; cursor: pointer; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="ant-layout">
+    <div class="ant-layout-content" style="padding: 24px;">
+      <h1>Orders</h1>
+      <button class="ant-btn" id="btn-filter">Filter</button>
+
+      <!-- Some background content -->
+      <div style="margin-top: 16px;">
+        <p>Showing all orders. Use the filter drawer to narrow results.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawer overlay -->
+  <div class="ant-drawer-mask"></div>
+  <div class="ant-drawer" role="complementary" aria-label="Filter Orders">
+    <div class="ant-drawer-header">
+      <span class="ant-drawer-title">Filter Orders</span>
+      <button
+        data-eval-target="drawer-close-button"
+        class="ant-btn-close"
+        aria-label="Close drawer"
+        data-testid="btn-drawer-close"
+      >&times;</button>
+    </div>
+    <div class="ant-drawer-body">
+      <form class="ant-form ant-form-vertical">
+
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="filter-customer">Customer Name</label>
+          <div class="ant-form-item-control">
+            <input
+              data-eval-target="filter-customer-input"
+              class="ant-input"
+              id="filter-customer"
+              name="customer"
+              placeholder="Search by customer name"
+              data-testid="input-filter-customer"
+            />
+          </div>
+        </div>
+
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="filter-date-from">Date From</label>
+          <div class="ant-form-item-control">
+            <input
+              data-eval-target="filter-date-from"
+              class="ant-picker"
+              id="filter-date-from"
+              name="dateFrom"
+              type="date"
+              data-testid="picker-date-from"
+            />
+          </div>
+        </div>
+
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="filter-date-to">Date To</label>
+          <div class="ant-form-item-control">
+            <input
+              data-eval-target="filter-date-to"
+              class="ant-picker"
+              id="filter-date-to"
+              name="dateTo"
+              type="date"
+              data-testid="picker-date-to"
+            />
+          </div>
+        </div>
+
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="filter-status">Order Status</label>
+          <div class="ant-form-item-control">
+            <select
+              data-eval-target="filter-status-select"
+              class="ant-select"
+              id="filter-status"
+              name="orderStatus"
+              data-testid="select-order-status"
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="ant-form-item">
+          <label class="ant-form-item-label" for="filter-min-amount">Min Amount</label>
+          <div class="ant-form-item-control">
+            <input
+              data-eval-target="filter-min-amount"
+              class="ant-input"
+              id="filter-min-amount"
+              name="minAmount"
+              type="number"
+              placeholder="0"
+              data-testid="input-min-amount"
+            />
+          </div>
+        </div>
+
+      </form>
+    </div>
+    <div class="ant-drawer-footer">
+      <button
+        data-eval-target="drawer-reset-button"
+        class="ant-btn ant-btn-default"
+        data-testid="btn-drawer-reset"
+      >Reset</button>
+      <button
+        data-eval-target="drawer-apply-button"
+        class="ant-btn ant-btn-primary"
+        data-testid="btn-drawer-apply"
+        style="margin-left: 8px;"
+      >Apply Filter</button>
+    </div>
+  </div>
+
+</body>
+</html>

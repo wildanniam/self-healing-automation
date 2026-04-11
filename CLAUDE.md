@@ -26,7 +26,11 @@ npx playwright test --project=chromium
 
 This is a **self-healing test automation system** that intercepts Playwright locator failures, uses an LLM to suggest alternative selectors, validates them at runtime, and falls back to the healed locator — all within the test run.
 
-The system is implemented in 3 completed phases + 1 planned phase:
+The latest development context is documented in `docs/targeted-dom-context-extraction.md`. Read that file before changing Phase 2 / LLM context logic.
+
+Current priority: improve Phase 2 so the system does not send a full cleaned DOM that is simply truncated. For complex React/Ant Design pages such as OmniX, the next implementation should extract relevant candidate elements first, rank them, and send those candidates to the LLM with the failure context.
+
+The system is implemented in runtime healing + post-heal permanency phases:
 
 ### Phase 1 — Playwright Wrapper (`src/self-healing/playwright/wrapper.ts`)
 Wraps Playwright actions (`safeClick`, `safeFill`, `safeSelectOption`, `safeGetText`, `safeWaitForVisible`, `safeIsVisible`). On failure, it captures a DOM snapshot and invokes the `HealCallback` if configured.
@@ -41,8 +45,11 @@ Wraps Playwright actions (`safeClick`, `safeFill`, `safeSelectOption`, `safeGetT
 - `locator-validator.ts` — validates candidate selector against live browser DOM; requires at least 1 matching element
 - `results-store.ts` — accumulates `HealingResult` objects in memory; persists report to `./healing-results/results.json` and DOM snapshots to `./healing-results/snapshots/`
 
-### Phase 4 — Auto-Patching (planned, not yet implemented)
-File patcher to rewrite `.spec.ts` files with healed locators, create git branches, and open GitLab MRs.
+### Phase 4 — Auto-Patching & GitHub PR
+File patcher rewrites `.spec.ts` files with healed locators. `post-heal` can create a branch, commit, push, and open a GitHub Pull Request.
+
+### Phase 5 — Current Phase 2 Upgrade
+Do not implement full DOM diff first. Build targeted candidate extraction first, then validate whether the correct target element appears in the candidate list. See `docs/targeted-dom-context-extraction.md`.
 
 ### Public API
 `src/self-healing/index.ts` exports `createHealingWrapper()` — a factory that wires up all three phases. Tests import this to get a `wrapper` object with all `safe*` methods ready.

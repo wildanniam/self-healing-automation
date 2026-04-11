@@ -4,6 +4,8 @@ import type { SelfHealingConfig } from '../config';
 import { loadConfig } from '../config';
 import { LlmClient } from '../openai/llm-client';
 import { formatCost } from '../openai/pricing';
+import { extractCandidates } from '../openai/dom-context-extractor';
+import { rankCandidates } from '../openai/candidate-ranker';
 import { PlaywrightWrapper } from '../playwright/wrapper';
 import { LocatorValidator } from './locator-validator';
 import { ResultsStore } from './results-store';
@@ -31,6 +33,7 @@ import { logger } from '../logger';
  *   await orchestrator.getStore().saveToFile();
  */
 export class HealingOrchestrator {
+  private readonly page: Page;
   private readonly llmClient: LlmClient;
   private readonly validator: LocatorValidator;
   private readonly store: ResultsStore;
@@ -40,6 +43,7 @@ export class HealingOrchestrator {
     private readonly config: SelfHealingConfig,
     store?: ResultsStore,
   ) {
+    this.page      = page;
     this.llmClient = new LlmClient(config);
     this.validator = new LocatorValidator(page);
     this.store     = store ?? new ResultsStore();
@@ -73,6 +77,33 @@ export class HealingOrchestrator {
       });
     }
 
+    // Ekstrak kandidat elemen dari live DOM via page.evaluate()
+    let rankedCandidates: ReturnType<typeof rankCandidates> = [];
+    try {
+      const rawCandidates = await extractCandidates(this.page, {
+        actionType: context.actionType,
+      });
+
+      rankedCandidates = rankCandidates(rawCandidates, {
+        oldSelector: descriptor.selector,
+        stepName: descriptor.stepName,
+        actionType: context.actionType,
+      });
+
+      logger.info('[orchestrator] Kandidat elemen diekstrak', {
+        rawCount: rawCandidates.length,
+        rankedCount: rankedCandidates.length,
+        topScore: rankedCandidates[0]?.score ?? 0,
+      });
+    } catch (err) {
+      logger.warn('[orchestrator] Gagal extract kandidat — fallback ke cleaned DOM', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Ambil kandidat teratas untuk dikirim ke LLM
+    const candidatesForLlm = rankedCandidates.map(rc => rc.candidate);
+
     // Akumulasi token & biaya dari semua retry pada healing call ini
     let totalTokens   = 0;
     let totalCostUsd  = 0;
@@ -80,10 +111,14 @@ export class HealingOrchestrator {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       logger.info(`[orchestrator] Percobaan ${attempt}/${maxRetries}`, {
         selector: descriptor.selector,
+        candidateCount: candidatesForLlm.length,
       });
 
-      // Step 1: Minta LLM menghasilkan kandidat locator baru
-      const llmResult = await this.llmClient.getHealedLocator(context);
+      // Step 1: Minta LLM menghasilkan kandidat locator baru (dengan candidates jika ada)
+      const llmResult = await this.llmClient.getHealedLocator(
+        context,
+        candidatesForLlm.length > 0 ? candidatesForLlm : undefined,
+      );
       const candidateSelector = llmResult.locator;
       if (llmResult.usage) {
         totalTokens  += llmResult.usage.totalTokens;

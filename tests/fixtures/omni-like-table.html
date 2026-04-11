@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniX-like Table</title>
+  <style>
+    .ant-table { width: 100%; border-collapse: collapse; }
+    .ant-table th, .ant-table td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: left; }
+    .ant-table thead th { background: #fafafa; font-weight: 600; }
+    .ant-btn { padding: 4px 12px; border-radius: 6px; cursor: pointer; border: 1px solid #d9d9d9; background: white; font-size: 13px; }
+    .ant-btn-link { border: none; color: #1677ff; background: none; padding: 0; }
+    .ant-btn-danger { color: #ff4d4f; border-color: #ff4d4f; }
+    .ant-input { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 6px; }
+    .ant-pagination { margin-top: 16px; text-align: right; }
+    .ant-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .ant-tag-green { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+    .ant-tag-red { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+    .ant-tag-blue { background: #e6f4ff; color: #1677ff; border: 1px solid #91caff; }
+  </style>
+</head>
+<body>
+  <div class="ant-layout">
+    <div class="ant-layout-content" style="padding: 24px;">
+
+      <h1>User Management</h1>
+
+      <!-- Search/filter bar -->
+      <div class="ant-space" style="margin-bottom: 16px; display: flex; gap: 8px;">
+        <input
+          data-eval-target="search-input"
+          class="ant-input"
+          name="search"
+          placeholder="Search users..."
+          aria-label="Search users"
+          data-testid="input-search"
+        />
+        <select
+          data-eval-target="status-filter"
+          class="ant-select"
+          name="statusFilter"
+          aria-label="Filter by status"
+          data-testid="select-status-filter"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <button
+          data-eval-target="search-button"
+          class="ant-btn ant-btn-primary"
+          data-testid="btn-search"
+        >Search</button>
+      </div>
+
+      <!-- Data table -->
+      <table class="ant-table" data-testid="users-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-row-key="1">
+            <td>John Doe</td>
+            <td>john@example.com</td>
+            <td><span class="ant-tag ant-tag-blue">Admin</span></td>
+            <td><span class="ant-tag ant-tag-green">Active</span></td>
+            <td>
+              <button
+                data-eval-target="detail-btn-row1"
+                class="ant-btn ant-btn-link"
+                data-testid="btn-detail-1"
+                aria-label="View detail John Doe"
+              >Detail</button>
+              <button
+                data-eval-target="edit-btn-row1"
+                class="ant-btn ant-btn-link"
+                data-testid="btn-edit-1"
+                aria-label="Edit John Doe"
+                style="margin-left: 8px;"
+              >Edit</button>
+              <button
+                data-eval-target="delete-btn-row1"
+                class="ant-btn ant-btn-link ant-btn-danger"
+                data-testid="btn-delete-1"
+                aria-label="Delete John Doe"
+                style="margin-left: 8px;"
+              >Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="2">
+            <td>Jane Smith</td>
+            <td>jane@example.com</td>
+            <td><span class="ant-tag ant-tag-blue">User</span></td>
+            <td><span class="ant-tag ant-tag-green">Active</span></td>
+            <td>
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-2" aria-label="View detail Jane Smith">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-2" aria-label="Edit Jane Smith" style="margin-left: 8px;">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-2" aria-label="Delete Jane Smith" style="margin-left: 8px;">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="3">
+            <td>Bob Wilson</td>
+            <td>bob@example.com</td>
+            <td><span class="ant-tag ant-tag-blue">Viewer</span></td>
+            <td><span class="ant-tag ant-tag-red">Inactive</span></td>
+            <td>
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-3" aria-label="View detail Bob Wilson">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-3" aria-label="Edit Bob Wilson" style="margin-left: 8px;">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-3" aria-label="Delete Bob Wilson" style="margin-left: 8px;">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="ant-pagination">
+        <button class="ant-btn" disabled>Previous</button>
+        <button class="ant-btn" aria-current="page">1</button>
+        <button class="ant-btn">2</button>
+        <button class="ant-btn">Next</button>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
