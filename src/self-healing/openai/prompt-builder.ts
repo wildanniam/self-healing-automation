@@ -100,10 +100,13 @@ ${supplementSection}
 ## Your Task
 From the candidate elements above, find the BEST replacement locator that targets the same element the original locator was intended for.
 
+Each candidate has a \`locators=[...]\` field with ready-to-use selectors. Pick one of those selectors whenever possible.
+
 ## Strict Rules
 1. Return ONLY a raw JSON object — no markdown fences, no explanation, no extra text.
 2. The locator must work with Playwright's \`page.locator()\` method (CSS selector or XPath).
-3. Choose the locator from the candidates above. Prioritize stable attributes:
+3. PREFER picking a locator from the candidate's \`locators=[...]\` list. Only compose a new selector if none of the suggested locators are suitable.
+4. Prioritize stable attributes in this order:
    - id
    - data-testid / data-test / data-cy
    - name
@@ -111,9 +114,9 @@ From the candidate elements above, find the BEST replacement locator that target
    - type + placeholder combination
    - Unique class name
    - XPath as last resort
-4. NEVER use positional selectors (nth-child, :nth-of-type, index-based XPath).
-5. Consider the action type "${actionType}" — the locator should target an element appropriate for this action.
-6. If no suitable replacement can be found, return: {"new_locator": null}
+5. NEVER use positional selectors (nth-child, :nth-of-type, index-based XPath).
+6. Consider the action type "${actionType}" — the locator should target an element appropriate for this action.
+7. If no suitable replacement can be found, return: {"new_locator": null}
 
 ## Response Format (ONLY this — nothing else)
 {"new_locator": "SELECTOR_HERE"}`;

@@ -32,6 +32,8 @@ export interface CandidateElement {
   containerContext?: string;
   /** Apakah elemen visible di viewport */
   isVisible?: boolean;
+  /** Suggested locators siap pakai: #id, [data-testid=...], [name=...], dll */
+  suggestedLocators?: string[];
   /** Marker ground truth untuk testing — TIDAK dikirim ke LLM */
   _evalTarget?: string;
 }
@@ -53,11 +55,11 @@ export interface ExtractionOptions {
  */
 export async function extractCandidates(
   page: Page,
-  options: ExtractionOptions,
+  _options: ExtractionOptions,
 ): Promise<CandidateElement[]> {
-  const { maxCandidates = 30 } = options;
-
   // Semua logika extraction dijalankan di browser context via evaluate
+  // Tidak ada slicing di sini — semua kandidat dikembalikan utuh,
+  // ranker yang bertanggung jawab memotong ke top N setelah scoring.
   const rawCandidates: CandidateElement[] = await page.evaluate(() => {
     const candidates: CandidateElement[] = [];
 
@@ -178,14 +180,32 @@ export async function extractCandidates(
         candidate.containerContext = `${containerType}: ${modalText}`;
       }
 
+      // Generate suggested locators siap pakai
+      // Helper: escape CSS identifier (untuk #id selectors)
+      const esc = (val: string) => CSS.escape(val);
+      // Helper: escape attribute value (untuk [attr="val"] selectors)
+      const escAttr = (val: string) => val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+      const suggested: string[] = [];
+      if (candidate.id) suggested.push(`#${esc(candidate.id)}`);
+      if (candidate.dataTestId) suggested.push(`[data-testid="${escAttr(candidate.dataTestId)}"]`);
+      if (candidate.dataTest) suggested.push(`[data-test="${escAttr(candidate.dataTest)}"]`);
+      if (candidate.dataCy) suggested.push(`[data-cy="${escAttr(candidate.dataCy)}"]`);
+      if (candidate.name) suggested.push(`[name="${escAttr(candidate.name)}"]`);
+      if (candidate.ariaLabel) suggested.push(`[aria-label="${escAttr(candidate.ariaLabel)}"]`);
+      if (candidate.placeholder) suggested.push(`[placeholder="${escAttr(candidate.placeholder)}"]`);
+      if (candidate.role && candidate.ariaLabel) {
+        suggested.push(`${candidate.tag}[role="${escAttr(candidate.role)}"][aria-label="${escAttr(candidate.ariaLabel)}"]`);
+      }
+      if (suggested.length > 0) candidate.suggestedLocators = suggested;
+
       candidates.push(candidate);
     }
 
     return candidates;
   });
 
-  // Ambil lebih banyak biar ranker yang potong
-  return rawCandidates.slice(0, maxCandidates * 3);
+  return rawCandidates;
 }
 
 /**
@@ -215,6 +235,9 @@ export function formatCandidateForPrompt(candidate: CandidateElement, index: num
   if (candidate.rowContext) parts.push(`row="${candidate.rowContext}"`);
   if (candidate.containerContext) parts.push(`container="${candidate.containerContext}"`);
   if (candidate.isVisible === false) parts.push(`[hidden]`);
+  if (candidate.suggestedLocators && candidate.suggestedLocators.length > 0) {
+    parts.push(`locators=[${candidate.suggestedLocators.join(' | ')}]`);
+  }
 
   return parts.join(', ');
 }

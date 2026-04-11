@@ -133,7 +133,8 @@ export class HealingOrchestrator {
       }
 
       // Step 2: Validasi kandidat langsung di browser (runtime)
-      const validation = await this.validator.validate(candidateSelector);
+      // Validator sekarang cek: count===1, visible, tag/role sesuai actionType
+      const validation = await this.validator.validate(candidateSelector, context.actionType);
 
       if (validation.isValid) {
         logger.info('[orchestrator] Locator healed', {
@@ -230,7 +231,30 @@ export function createHealingWrapper(
 ): { wrapper: PlaywrightWrapper; orchestrator: HealingOrchestrator } {
   const cfg          = config ?? loadConfig();
   const orchestrator = new HealingOrchestrator(page, cfg);
-  const wrapper      = new PlaywrightWrapper(page, orchestrator.heal.bind(orchestrator));
+
+  // Callback: saat action dengan healed selector gagal, update status ke 'action_failed'
+  const onActionFailed = (descriptor: { selector: string; testName: string; filePath: string }, healedSelector: string, error: string): void => {
+    const store = orchestrator.getStore();
+    const updated = store.updateLastStatus(
+      {
+        oldLocator: descriptor.selector,
+        newLocator: healedSelector,
+        testName: descriptor.testName,
+        filePath: descriptor.filePath,
+      },
+      'healed',
+      'action_failed',
+    );
+    if (updated) {
+      logger.warn('[orchestrator] Status diubah ke action_failed', {
+        oldLocator: descriptor.selector,
+        healedLocator: healedSelector,
+        error,
+      });
+    }
+  };
+
+  const wrapper = new PlaywrightWrapper(page, orchestrator.heal.bind(orchestrator), onActionFailed);
 
   return { wrapper, orchestrator };
 }

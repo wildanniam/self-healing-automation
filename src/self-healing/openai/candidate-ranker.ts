@@ -98,6 +98,7 @@ function scoreCandidate(candidate: CandidateElement, ctx: RankingContext): numbe
   const stepTokens = ctx.stepName ? tokenize(ctx.stepName) : [];
 
   // Gabungkan semua teks dari kandidat untuk matching
+  // Termasuk rowContext, parentContext, containerContext agar matching lebih lengkap
   const candidateTexts = [
     candidate.id,
     candidate.name,
@@ -109,6 +110,9 @@ function scoreCandidate(candidate: CandidateElement, ctx: RankingContext): numbe
     candidate.dataTest,
     candidate.dataCy,
     candidate.title,
+    candidate.rowContext,
+    candidate.parentContext,
+    candidate.containerContext,
     ...(candidate.classes ?? []),
   ].filter(Boolean) as string[];
 
@@ -163,11 +167,29 @@ function scoreCandidate(candidate: CandidateElement, ctx: RankingContext): numbe
     if (attr === 'placeholder' && candidate.placeholder === val) score += 25;
   }
 
-  // 9. Container context matching dengan stepName
+  // 9. Row context matching dengan stepName dan old selector
+  // Penting untuk table case: "Klik detail John Doe" + rowContext="John Doe"
+  if (candidate.rowContext) {
+    const rowTokens = tokenize(candidate.rowContext);
+    if (stepTokens.length > 0) {
+      score += wordOverlap(stepTokens, rowTokens) * 12;
+    }
+    score += wordOverlap(selectorTokens, rowTokens) * 8;
+  }
+
+  // 10. Parent context matching
+  if (candidate.parentContext) {
+    const parentTokens = tokenize(candidate.parentContext);
+    if (stepTokens.length > 0) {
+      score += wordOverlap(stepTokens, parentTokens) * 5;
+    }
+    score += wordOverlap(selectorTokens, parentTokens) * 5;
+  }
+
+  // 11. Container context matching (modal/drawer)
   if (candidate.containerContext && stepTokens.length > 0) {
     const containerTokens = tokenize(candidate.containerContext);
-    const containerOverlap = wordOverlap(stepTokens, containerTokens);
-    score += containerOverlap * 5;
+    score += wordOverlap(stepTokens, containerTokens) * 8;
   }
 
   return score;

@@ -44,6 +44,7 @@ export type {
   HealingResult,
   WrapperOptions,
   HealCallback,
+  ActionFailedCallback,
 } from './types';
 
 export type { ValidationResult } from './core/locator-validator';

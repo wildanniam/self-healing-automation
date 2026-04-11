@@ -4,6 +4,7 @@ import type {
   HealingContext,
   WrapperOptions,
   HealCallback,
+  ActionFailedCallback,
   ActionType,
 } from '../types';
 import { logger } from '../logger';
@@ -25,6 +26,7 @@ export class PlaywrightWrapper {
   constructor(
     private readonly page: Page,
     private readonly healCallback?: HealCallback,
+    private readonly onActionFailed?: ActionFailedCallback,
   ) {}
 
   /**
@@ -112,7 +114,12 @@ export class PlaywrightWrapper {
           oldSelector: descriptor.selector,
           newSelector: healedSelector,
         });
-        await this.page.locator(healedSelector).click({ timeout });
+        try {
+          await this.page.locator(healedSelector).click({ timeout });
+        } catch (actionError) {
+          this.reportActionFailed(descriptor, healedSelector, actionError);
+          throw actionError;
+        }
       } else {
         throw error;
       }
@@ -152,7 +159,12 @@ export class PlaywrightWrapper {
           oldSelector: descriptor.selector,
           newSelector: healedSelector,
         });
-        await this.page.locator(healedSelector).fill(value, { timeout });
+        try {
+          await this.page.locator(healedSelector).fill(value, { timeout });
+        } catch (actionError) {
+          this.reportActionFailed(descriptor, healedSelector, actionError);
+          throw actionError;
+        }
       } else {
         throw error;
       }
@@ -187,7 +199,12 @@ export class PlaywrightWrapper {
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
-        await this.page.locator(healedSelector).selectOption(value, { timeout });
+        try {
+          await this.page.locator(healedSelector).selectOption(value, { timeout });
+        } catch (actionError) {
+          this.reportActionFailed(descriptor, healedSelector, actionError);
+          throw actionError;
+        }
       } else {
         throw error;
       }
@@ -222,7 +239,12 @@ export class PlaywrightWrapper {
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
-        return this.page.locator(healedSelector).textContent({ timeout });
+        try {
+          return await this.page.locator(healedSelector).textContent({ timeout });
+        } catch (actionError) {
+          this.reportActionFailed(descriptor, healedSelector, actionError);
+          throw actionError;
+        }
       }
 
       throw error;
@@ -256,7 +278,12 @@ export class PlaywrightWrapper {
       const healedSelector = await this.tryHeal(context, enableHealing ?? true);
 
       if (healedSelector) {
-        await this.page.locator(healedSelector).waitFor({ state: 'visible', timeout });
+        try {
+          await this.page.locator(healedSelector).waitFor({ state: 'visible', timeout });
+        } catch (actionError) {
+          this.reportActionFailed(descriptor, healedSelector, actionError);
+          throw actionError;
+        }
       } else {
         throw error;
       }
@@ -264,8 +291,26 @@ export class PlaywrightWrapper {
   }
 
   /**
+   * Melaporkan bahwa action dengan healed selector gagal.
+   * Memanggil onActionFailed callback jika tersedia.
+   */
+  private reportActionFailed(descriptor: LocatorDescriptor, healedSelector: string, error: unknown): void {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    logger.error('[self-healing] Action dengan healed selector gagal', {
+      oldSelector: descriptor.selector,
+      healedSelector,
+      testName: descriptor.testName,
+      error: errorMsg,
+    });
+    if (this.onActionFailed) {
+      this.onActionFailed(descriptor, healedSelector, errorMsg);
+    }
+  }
+
+  /**
    * Wrapper untuk page.locator(selector).isVisible()
    * Tidak melempar error — mengembalikan false jika elemen tidak ditemukan.
+   * CATATAN: Method ini TIDAK melakukan healing karena isVisible() tidak throw.
    */
   async safeIsVisible(descriptor: LocatorDescriptor): Promise<boolean> {
     try {

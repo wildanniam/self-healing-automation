@@ -8,6 +8,8 @@ import { formatCost, formatCostIdr } from '../openai/pricing';
 export interface HealingSummary {
   total: number;
   healed: number;
+  /** Locator berhasil di-heal tapi action Playwright tetap gagal */
+  actionFailed: number;
   failed: number;
   skipped: number;
   successRate: string;
@@ -67,11 +69,38 @@ export class ResultsStore {
   }
 
   /**
+   * Update status healing result terakhir yang cocok dengan criteria.
+   * Match pakai 4 field (oldLocator, newLocator, testName, filePath) untuk presisi.
+   * Dipakai untuk mengubah 'healed' ke 'action_failed' saat action gagal.
+   */
+  updateLastStatus(
+    criteria: { oldLocator: string; newLocator: string; testName: string; filePath: string },
+    fromStatus: HealingResult['status'],
+    toStatus: HealingResult['status'],
+  ): boolean {
+    for (let i = this.results.length - 1; i >= 0; i--) {
+      const r = this.results[i];
+      if (
+        r.oldLocator === criteria.oldLocator &&
+        r.newLocator === criteria.newLocator &&
+        r.testName === criteria.testName &&
+        r.filePath === criteria.filePath &&
+        r.status === fromStatus
+      ) {
+        r.status = toStatus;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Mengembalikan ringkasan statistik dari semua hasil healing.
    */
   getSummary(): HealingSummary {
     const healedResults  = this.results.filter(r => r.status === 'healed');
     const healed  = healedResults.length;
+    const actionFailed = this.results.filter(r => r.status === 'action_failed').length;
     const failed  = this.results.filter(r => r.status === 'failed').length;
     const skipped = this.results.filter(r => r.status === 'skipped').length;
     const total   = this.results.length;
@@ -98,7 +127,7 @@ export class ResultsStore {
     const avgCostPerLocatorUsd = total > 0 ? totalCostUsd / total : 0;
 
     return {
-      total, healed, failed, skipped, successRate,
+      total, healed, actionFailed, failed, skipped, successRate,
       avgHealingTimeMs, fastestHealMs, slowestHealMs, avgRetryCount,
       totalTokens, totalCostUsd, avgCostPerLocatorUsd,
     };

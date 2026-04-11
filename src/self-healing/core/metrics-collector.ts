@@ -7,6 +7,8 @@ export interface HealingMetrics {
   generatedAt: string;
   totalLocators: number;
   healed: number;
+  /** Locator berhasil di-heal tapi action Playwright tetap gagal */
+  actionFailed: number;
   failed: number;
   skipped: number;
   successRate: string;
@@ -26,7 +28,7 @@ export interface HealingMetricDetail {
   testName: string;
   oldLocator: string;
   newLocator: string;
-  status: 'healed' | 'failed' | 'skipped';
+  status: 'healed' | 'action_failed' | 'failed' | 'skipped';
   durationMs: number;
   retryCount: number;
 }
@@ -63,6 +65,7 @@ export class MetricsCollector {
       generatedAt:      new Date().toISOString(),
       totalLocators:    summary.total,
       healed:           summary.healed,
+      actionFailed:     summary.actionFailed,
       failed:           summary.failed,
       skipped:          summary.skipped,
       successRate:      summary.successRate,
@@ -104,6 +107,7 @@ export class MetricsCollector {
     logger.info('[metrics-collector] ===== HEALING METRICS =====', {
       total:            metrics.totalLocators,
       healed:           metrics.healed,
+      actionFailed:     metrics.actionFailed,
       failed:           metrics.failed,
       skipped:          metrics.skipped,
       successRate:      metrics.successRate,

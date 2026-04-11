@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Validator Test Fixture</title>
+  <style>
+    .hidden-input { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Visible input -->
+  <input id="visible-input" type="text" placeholder="Visible input" />
+
+  <!-- Hidden input (display: none) -->
+  <input id="hidden-input" class="hidden-input" type="text" placeholder="Hidden input" />
+
+  <!-- Disabled button -->
+  <button id="disabled-btn" disabled>Disabled</button>
+
+  <!-- Enabled button -->
+  <button id="enabled-btn">Click me</button>
+
+  <!-- Multiple elements with same class (ambiguous) -->
+  <button class="same-btn">Button A</button>
+  <button class="same-btn">Button B</button>
+
+  <!-- Native <select> -->
+  <select id="native-select">
+    <option value="a">Option A</option>
+    <option value="b">Option B</option>
+  </select>
+
+  <!-- Plain div (not fillable, not selectable) -->
+  <div id="plain-div">Just a div</div>
+
+  <!-- Contenteditable div (valid for fill) -->
+  <div id="editable-div" contenteditable="true">Editable content</div>
+
+  <!-- Textarea -->
+  <textarea id="my-textarea">Some text</textarea>
+
+  <!-- Element that does not exist — tested via selector that won't match -->
+</body>
+</html>

@@ -28,7 +28,7 @@ async function writeTempFile(filename: string, content: string): Promise<string>
 async function writeTempReport(tmpSpecPath: string, oldLocator: string, newLocator: string): Promise<string> {
   const report: HealingReport = {
     generatedAt: new Date().toISOString(),
-    summary: { total: 1, healed: 1, failed: 0, skipped: 0, successRate: '100.0%', avgHealingTimeMs: 0, fastestHealMs: 0, slowestHealMs: 0, avgRetryCount: 0, totalTokens: 0, totalCostUsd: 0, avgCostPerLocatorUsd: 0 },
+    summary: { total: 1, healed: 1, actionFailed: 0, failed: 0, skipped: 0, successRate: '100.0%', avgHealingTimeMs: 0, fastestHealMs: 0, slowestHealMs: 0, avgRetryCount: 0, totalTokens: 0, totalCostUsd: 0, avgCostPerLocatorUsd: 0 },
     results: [
       {
         testName:    'Test Example',
@@ -126,7 +126,7 @@ await wrapper.safeClick({ selector: '#btn-login', testName: 'login', filePath: _
 test('report tanpa healed result — return array kosong', async () => {
   const report: HealingReport = {
     generatedAt: new Date().toISOString(),
-    summary: { total: 1, healed: 0, failed: 1, skipped: 0, successRate: '0.0%', avgHealingTimeMs: 0, fastestHealMs: 0, slowestHealMs: 0, avgRetryCount: 0, totalTokens: 0, totalCostUsd: 0, avgCostPerLocatorUsd: 0 },
+    summary: { total: 1, healed: 0, actionFailed: 0, failed: 1, skipped: 0, successRate: '0.0%', avgHealingTimeMs: 0, fastestHealMs: 0, slowestHealMs: 0, avgRetryCount: 0, totalTokens: 0, totalCostUsd: 0, avgCostPerLocatorUsd: 0 },
     results: [
       {
         testName:    'Test Failed',

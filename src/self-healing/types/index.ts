@@ -47,8 +47,13 @@ export interface HealingResult {
   oldLocator: string;
   newLocator: string;
   timestamp: string;
-  /** healed = berhasil di-heal, failed = max retry tercapai, skipped = healing dinonaktifkan */
-  status: 'healed' | 'failed' | 'skipped';
+  /**
+   * healed         = locator di-heal DAN action berhasil
+   * action_failed  = locator di-heal tapi action tetap gagal
+   * failed         = max retry tercapai, tidak dapat locator valid
+   * skipped        = healing dinonaktifkan
+   */
+  status: 'healed' | 'action_failed' | 'failed' | 'skipped';
   retryCount: number;
   /** Path ke file HTML snapshot DOM saat kegagalan (untuk debugging & inspeksi) */
   domSnapshotFile?: string;
@@ -76,3 +81,9 @@ export interface WrapperOptions {
  * Mengembalikan selector baru yang sudah divalidasi, atau null jika gagal.
  */
 export type HealCallback = (context: HealingContext) => Promise<string | null>;
+
+/**
+ * Callback yang dipanggil wrapper saat action dengan healed selector tetap gagal.
+ * Dipakai untuk memperbarui status healing dari 'healed' ke 'action_failed'.
+ */
+export type ActionFailedCallback = (descriptor: LocatorDescriptor, healedSelector: string, error: string) => void;
