@@ -1,123 +1,177 @@
-# Pengembangan Sistem Self-Healing Test Automation Berbasis Large Language Model pada Pengujian Antarmuka Web dalam Lingkungan CI/CD
+# Self-Healing Test Automation Berbasis LLM
 
-Prototype tugas akhir untuk mendeteksi, memperbaiki, dan memermanenkan locator UI yang rusak secara otomatis menggunakan Large Language Model (LLM) pada stack Playwright + TypeScript.
+Prototype Tugas Akhir untuk memperbaiki locator UI test yang rusak secara otomatis menggunakan Large Language Model (LLM), Playwright, dan TypeScript.
 
-## Ringkasan
-
-Proyek ini dikembangkan untuk menjawab masalah **fragilitas locator** pada UI test automation. Perubahan kecil pada atribut atau struktur DOM sering membuat locator lama tidak lagi valid, sehingga test gagal walaupun perilaku aplikasi sebenarnya masih benar. Dampaknya adalah munculnya *false failure* di pipeline CI/CD dan meningkatnya beban maintenance bagi QA engineer.
-
-Sistem pada repo ini menggabungkan:
-
-- **Playwright wrapper** untuk mengintersepsi kegagalan locator pada runtime,
-- **DOM extraction dan cleaning** untuk menyiapkan konteks yang efisien bagi LLM,
-- **OpenAI-based healing** untuk menghasilkan kandidat locator baru,
-- **runtime validation dan retry** untuk memeriksa apakah kandidat locator dapat dipakai,
-- **post-heal auto-patching** untuk memperbarui source test secara permanen,
-- **Git automation** untuk membuat branch, commit, push, dan Pull Request otomatis.
+Sistem ini dibuat untuk membantu proses maintenance UI test automation. Ketika locator seperti `#username`, `[data-testid="submit"]`, atau `.ant-btn-primary` tidak lagi cocok dengan DOM terbaru, test biasanya gagal walaupun fitur aplikasi sebenarnya masih berjalan. Repo ini mencoba menangani kasus tersebut dengan alur self-healing yang tetap divalidasi sebelum hasilnya dipakai dan dipermanenkan.
 
 ## Konteks Proyek
 
-- **Jenis proyek:** Tugas Akhir / penelitian terapan
-- **Author:** Wildan Syukri Niam
-- **Program studi:** S1 Rekayasa Perangkat Lunak, Telkom University
-- **Studi kasus industri:** PT Infomedia Nusantara
-- **Objek pengujian:** aplikasi web OmniX
+| Item | Keterangan |
+| --- | --- |
+| Jenis proyek | Tugas Akhir / penelitian terapan |
+| Penulis | Wildan Syukri Niam |
+| Program studi | S1 Rekayasa Perangkat Lunak, Telkom University |
+| Studi kasus industri | PT Infomedia Nusantara |
+| Target konteks | Pengujian UI aplikasi web, khususnya scenario OmniX |
+| Stack utama | Playwright, TypeScript, Node.js, OpenAI SDK, GitHub Actions |
 
-Repo ini berfungsi sebagai **prototype penelitian**, bukan produk production-ready. Fokus utamanya adalah membuktikan kelayakan arsitektur self-healing berbasis LLM pada pengujian UI di lingkungan CI/CD.
+Repo ini adalah prototype penelitian. Fokusnya bukan membuat framework testing production-ready, tetapi membuktikan apakah locator yang rusak dapat dipulihkan secara otomatis, divalidasi saat runtime, lalu dijadikan patch yang bisa direview.
 
-## Teknologi yang Digunakan
+## Masalah yang Diselesaikan
 
-- **Test automation:** Playwright
-- **Bahasa:** TypeScript / Node.js
-- **LLM integration:** OpenAI SDK
-- **CI/CD:** GitHub Actions
-- **Version control automation:** simple-git
-- **Patch automation:** Node.js file system + regex-based replacement
+UI test sering gagal karena locator berubah. Contohnya:
+
+```text
+locator lama: #password
+DOM baru:     <input id="user-password" name="password" />
+```
+
+Pada kondisi seperti ini, kegagalan test bukan berarti fitur aplikasi rusak. Yang rusak adalah cara test menemukan elemen UI.
+
+Masalah yang ingin dikurangi:
+
+- false failure pada pipeline CI/CD,
+- maintenance locator yang repetitif,
+- waktu debugging QA yang terbuang,
+- dan keterlambatan feedback ketika UI berubah tetapi behavior masih benar.
 
 ## Cara Kerja Sistem
 
-Alur kerja utama sistem adalah sebagai berikut:
+Alur self-healing terbaru:
 
 ```text
-Playwright Action via Wrapper
-        ->
-Deteksi Kegagalan Locator
-        ->
-Ekstraksi DOM Runtime + Failure Context
-        ->
-DOM Cleaning
-        ->
-LLM Menghasilkan Locator Baru
-        ->
-Runtime Validation + Retry
-        ->
-Re-run Aksi dengan Locator Baru
-        ->
-Simpan Healing Report
-        ->
-Post-Heal: Patch File Test + Branch + Commit + Push + PR
+Playwright test memanggil wrapper
+-> locator gagal
+-> wrapper mengambil konteks error dan DOM runtime
+-> sistem mengekstrak kandidat elemen dari live DOM
+-> kandidat diberi ranking berdasarkan action, step, locator lama, atribut, dan konteks
+-> kandidat terbaik dikirim ke LLM
+-> LLM memilih locator pengganti
+-> validator mengecek locator di browser aktif
+-> wrapper mencoba ulang action dengan locator baru
+-> hasil healing disimpan
+-> post-heal dapat membuat patch, branch, commit, push, dan Pull Request
 ```
 
-Secara praktis, sistem dibagi menjadi dua bagian besar:
+Sistem dibagi menjadi dua bagian:
 
 1. **Runtime healing**
-   Menjaga agar test dapat melanjutkan eksekusi ketika locator rusak.
+   Memulihkan locator saat test sedang berjalan agar action dapat dicoba ulang.
+
 2. **Permanent healing**
-   Mengubah hasil healing menjadi patch yang bisa direview dan diadopsi ke source test.
+   Memermanenkan locator hasil healing ke file test melalui proses `post-heal`, sehingga perubahan bisa direview lewat Pull Request.
+
+## Phase 2 Terbaru: Candidate Context, Bukan Full DOM
+
+Perubahan terpenting pada versi terbaru ada di Phase 2.
+
+Pendekatan lama:
+
+```text
+ambil full DOM
+-> bersihkan DOM
+-> potong sampai batas karakter
+-> kirim ke LLM
+```
+
+Pendekatan lama cukup untuk halaman kecil, tetapi berisiko pada aplikasi besar seperti OmniX. DOM bisa sangat panjang, sehingga elemen target dapat terpotong dan tidak ikut terkirim ke LLM.
+
+Pendekatan baru:
+
+```text
+ambil live DOM
+-> ekstrak kandidat elemen penting
+-> ranking kandidat
+-> kirim top kandidat + suggested locator ke LLM
+```
+
+Contoh kandidat yang dikirim ke LLM:
+
+```text
+1. tag=input, id="user-email", name="email", placeholder="Email", locators=[#user-email | [name="email"]]
+2. tag=input, id="user-password", name="password", placeholder="Password", locators=[#user-password | [name="password"]]
+3. tag=button, text="Login", locators=[#login-button]
+```
+
+Dengan cara ini, LLM tidak diminta membaca seluruh halaman. LLM diarahkan memilih locator dari kandidat yang sudah dipersempit dan diberi konteks.
 
 ## Fitur Utama
 
-- Wrapper action untuk `click`, `fill`, `selectOption`, `getText`, `waitForVisible`, dan `isVisible`
-- Pengambilan snapshot DOM saat kegagalan terjadi
-- Pembersihan DOM dari `script`, `style`, `svg`, `head`, komentar HTML, dan noise lain
-- Prompt builder dengan output JSON-only
-- Integrasi OpenAI untuk menghasilkan locator baru
-- Runtime validation pada browser aktif
-- Retry healing hingga maksimal 3 kali
-- Penyimpanan hasil healing ke report dan snapshot file
-- Auto-patching locator pada file `.spec.ts`
-- Branch, commit, push, dan Pull Request automation
-- Workflow GitHub Actions untuk test, post-heal, dan artifact upload
-- Demo mode untuk presentasi tugas akhir
+- Wrapper Playwright untuk `click`, `fill`, `selectOption`, `getText`, `waitForVisible`, dan `isVisible`.
+- Runtime DOM snapshot saat locator gagal.
+- Candidate element extraction dari live DOM menggunakan `page.evaluate()`.
+- Ranking kandidat berdasarkan `actionType`, `oldLocator`, `stepName`, atribut stabil, text, label, row context, parent context, dan container context.
+- Suggested locator generation seperti `#id`, `[data-testid="..."]`, `[name="..."]`, `[aria-label="..."]`, dan `[placeholder="..."]`.
+- Prompt builder yang mengirim kandidat elemen ke LLM.
+- Fallback ke cleaned DOM jika kandidat tidak cukup.
+- Runtime validator yang menolak locator ambigu, hidden, disabled, atau tidak cocok dengan action.
+- Status `action_failed` jika locator valid tetapi action Playwright tetap gagal.
+- Healing result dan DOM snapshot untuk debugging.
+- Metrics collector untuk membaca hasil healing.
+- Auto-patching file `.spec.ts` berdasarkan hasil healing yang valid.
+- GitHub branch, commit, push, dan Pull Request automation.
+- GitHub Actions untuk test, post-heal, dan upload artifact.
+- Demo mode untuk kebutuhan presentasi TA.
 
-## Status Implementasi Saat Ini
+## Status Implementasi
 
 | Area | Status | Keterangan |
 | --- | --- | --- |
-| Wrapper & interception | Implemented | Wrapper Playwright untuk aksi utama sudah aktif |
-| DOM cleaning & LLM prompting | Implemented | DOM cleaner, prompt builder, dan OpenAI client sudah tersedia |
-| Runtime healing orchestration | Implemented | Orchestrator, validator, dan result store sudah berjalan |
-| Auto-patching | Implemented | Patcher membaca report dan mengganti locator pada file test |
-| Git automation & PR | Implemented | Branch, commit, push, dan GitHub PR creator sudah tersedia |
-| CI/CD integration | Implemented (Basic) | Workflow GitHub Actions sudah menjalankan test dan post-heal |
-| Research instrumentation | In progress | Beberapa metrik eksperimen masih perlu diperdalam |
+| Phase 1 - Wrapper & interception | Implemented | Wrapper Playwright untuk aksi utama sudah aktif |
+| Phase 2 - Candidate DOM context | Implemented | Extractor, ranker, suggested locators, prompt builder, dan fallback DOM sudah tersedia |
+| Phase 3 - Runtime validation | Implemented | Orchestrator, validator ketat, retry, result store, dan status `action_failed` sudah berjalan |
+| Phase 4 - Auto-patching | Implemented | `post-heal` dapat mengganti locator di file test berdasarkan hasil healing |
+| Phase 4 - GitHub PR automation | Implemented | Branch, commit, push, dan PR creator sudah tersedia |
+| Phase 5 - CI/CD & metrics | Implemented (basic) | GitHub Actions, artifact upload, report, dan metrics dasar sudah tersedia |
+| Experiment readiness | In progress | Perlu stress fixture yang lebih kompleks untuk validasi terhadap pola OmniX/Ant Design |
 
 ## Struktur Repository
 
 ```text
 src/self-healing/
+  config.ts
+  index.ts
+  types/
+    index.ts
   playwright/
-    wrapper.ts                # Wrapper aksi Playwright
+    wrapper.ts
   openai/
-    dom-cleaner.ts            # Pembersihan DOM
-    prompt-builder.ts         # Penyusunan prompt ke LLM
-    llm-client.ts             # Integrasi OpenAI
+    dom-cleaner.ts
+    dom-context-extractor.ts
+    candidate-ranker.ts
+    prompt-builder.ts
+    llm-client.ts
+    llm-tracer.ts
+    pricing.ts
   core/
-    healing-orchestrator.ts   # Orkestrasi healing runtime
-    locator-validator.ts      # Validasi locator kandidat
-    results-store.ts          # Penyimpanan hasil healing
-    metrics-collector.ts      # Metrik dasar
-    file-patcher.ts           # Patch locator ke file test
+    healing-orchestrator.ts
+    locator-validator.ts
+    results-store.ts
+    metrics-collector.ts
+    file-patcher.ts
   git/
-    git-service.ts            # Branch, commit, push
-    github-pr-creator.ts      # Pembuatan Pull Request
+    git-service.ts
+    github-pr-creator.ts
+
 scripts/
-  post-heal.ts                # Patch + git + PR
-  demo.ts                     # One-command demo
+  demo.ts
+  post-heal.ts
+
 tests/
-  self-healing-demo.spec.ts   # Demo end-to-end
-  file-patcher.spec.ts        # Unit test patcher
-  git-service.spec.ts         # Unit test git automation
+  self-healing-demo.spec.ts
+  dom-context-extractor.spec.ts
+  locator-validator.spec.ts
+  action-failed.spec.ts
+  metrics-collector.spec.ts
+  file-patcher.spec.ts
+  git-service.spec.ts
+  fixtures/
+    demo.html
+    omni-like-*.html
+    validator-test.html
+
+docs/
+  targeted-dom-context-extraction.md
 ```
 
 ## Persiapan Environment
@@ -126,153 +180,208 @@ tests/
 
 - Node.js LTS
 - npm
-- Browser Playwright
+- Playwright browser dependencies
 - OpenAI API key
-- GitHub token jika ingin mengaktifkan pembuatan PR otomatis
+- GitHub token jika ingin menjalankan PR automation
 
 ### Setup
 
-1. Install dependency:
+Install dependency:
 
 ```bash
 npm ci
 ```
 
-2. Install browser Playwright:
+Install browser Playwright:
 
 ```bash
 npx playwright install --with-deps
 ```
 
-3. Salin file environment:
+Salin file environment:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Isi variabel yang dibutuhkan pada `.env`, minimal:
+Isi minimal:
 
 ```env
-OPENAI_API_KEY=your_api_key
+OPENAI_API_KEY=sk-...your-api-key...
 OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_TOKENS=500
+OPENAI_TEMPERATURE=0
 HEALING_MAX_RETRIES=3
 HEALING_DOM_MAX_CHARS=8000
 ```
 
-Jika ingin mengaktifkan post-heal hingga Pull Request otomatis, isi juga:
+Jika ingin menjalankan `post-heal` sampai Pull Request:
 
 ```env
-GITHUB_TOKEN=your_github_token
+GITHUB_TOKEN=ghp_...your-token...
 GITHUB_REPO=owner/repo
 GIT_BRANCH_PREFIX=auto-healing
 GIT_COMMIT_MSG_PREFIX=chore(self-healing)
 ```
 
+Jangan commit file `.env`.
+
 ## Cara Menjalankan
 
-### Menjalankan seluruh test
+Menjalankan semua test:
 
 ```bash
 npm test
 ```
 
-### Menjalankan test dengan browser terlihat
+Menjalankan type-check:
+
+```bash
+npm run type-check
+```
+
+Menjalankan test dengan browser terlihat:
 
 ```bash
 npm run test:headed
 ```
 
-### Menjalankan demo end-to-end
+Menjalankan mode debug:
+
+```bash
+npm run test:debug
+```
+
+Menjalankan demo end-to-end:
 
 ```bash
 npm run demo
 ```
 
-Perintah ini akan:
-
-- menjalankan `tests/self-healing-demo.spec.ts`,
-- memicu jalur healing,
-- menjalankan `post-heal`,
-- lalu membuka report jika tersedia.
-
-### Menjalankan post-heal secara manual
+Menjalankan post-heal:
 
 ```bash
 npm run post-heal
 ```
 
-### Menjalankan post-heal tanpa git dan PR
+Menjalankan post-heal tanpa membuat perubahan git/PR:
 
 ```bash
 npm run post-heal:dry
 ```
 
-## Skenario Demo yang Sudah Tersedia
+## Test yang Disarankan
 
-File `tests/self-healing-demo.spec.ts` saat ini memuat tiga skenario dasar:
+Untuk validasi cepat setelah perubahan kode:
 
-- **Happy path**
-  Locator benar, healing tidak dipanggil.
-- **Single broken locator**
-  Satu locator rusak dan sistem mencoba memperbaikinya.
-- **Multiple broken locators**
-  Beberapa locator rusak dalam satu flow dan diperbaiki secara berurutan.
+```bash
+npm run type-check
+```
 
-Skenario ini cocok untuk demonstrasi awal, tetapi eksperimen formal TA masih akan diperluas ke skenario yang lebih terstruktur.
+Untuk test utama self-healing:
+
+```bash
+npx playwright test tests/locator-validator.spec.ts tests/action-failed.spec.ts tests/dom-context-extractor.spec.ts tests/file-patcher.spec.ts tests/example.spec.ts --project=chromium
+```
+
+Untuk metrics dan git helper:
+
+```bash
+npx playwright test tests/metrics-collector.spec.ts tests/git-service.spec.ts --project=chromium
+```
 
 ## Output yang Dihasilkan
 
-Setelah pengujian berjalan, repo dapat menghasilkan artefak berikut:
+Setelah test atau demo berjalan, repo dapat menghasilkan:
 
-- `healing-results/results.json`
-  Ringkasan hasil healing
-- `healing-results/snapshots/`
-  Snapshot DOM saat kegagalan terjadi
-- `playwright-report/`
-  HTML report dari Playwright
-- `test-results/`
-  Artefak hasil test
+```text
+healing-results/results.json
+healing-results/snapshots/
+playwright-report/
+test-results/
+```
+
+Keterangan:
+
+- `results.json` menyimpan status healing seperti `healed`, `failed`, `skipped`, dan `action_failed`.
+- `snapshots/` menyimpan DOM saat kegagalan terjadi.
+- `playwright-report/` menyimpan HTML report dari Playwright.
+- `test-results/` menyimpan artifact eksekusi test.
 
 ## GitHub Actions
 
-Workflow `.github/workflows/playwright.yml` saat ini menjalankan:
+Workflow `.github/workflows/playwright.yml` menjalankan:
 
-1. `npm ci`
-2. install browser Playwright
-3. `npx playwright test`
-4. `npm run post-heal` pada event `push`
-5. upload artifact report dan healing results
+1. install dependency,
+2. install browser Playwright,
+3. menjalankan Playwright test,
+4. menjalankan `post-heal` pada event `push`,
+5. upload Playwright report dan healing results sebagai artifact.
 
-Dengan desain ini, permanensi perbaikan dilakukan sebagai **post-run workflow**, bukan inline di tengah test.
+Permanensi perbaikan dilakukan setelah test selesai, bukan inline di tengah eksekusi test. Desain ini membuat proses patch dan PR lebih mudah diaudit.
 
 ## Batasan Saat Ini
 
-Beberapa batasan implementasi yang masih relevan:
+Repo ini sudah dapat digunakan untuk demo dan validasi awal, tetapi belum boleh diklaim robust untuk semua aplikasi web modern.
 
-- Validator saat ini memeriksa apakah locator kandidat menemukan minimal satu elemen, belum melakukan semantic verification penuh.
-- Metrik seperti `false healing` dan `patch success rate` end-to-end masih perlu diperdalam untuk kebutuhan analisis penelitian.
-- Demo yang tersedia saat ini masih dominan berbasis fixture HTML, sehingga eksperimen formal dengan mutasi DOM runtime masih perlu diperluas.
-- Sistem ini masih berfokus pada kegagalan locator UI, bukan kegagalan logika bisnis aplikasi secara umum.
+Batasan penting:
 
-Bagian ini penting karena repo ini adalah artefak penelitian yang masih terus disempurnakan, bukan sistem final yang seluruh aspeknya sudah dikunci.
+- Demo login masih terlalu sederhana untuk membuktikan robustness pada OmniX.
+- Fixture Ant Design-like sudah membantu, tetapi belum sama dengan aplikasi industri nyata.
+- `safeSelectOption` saat ini aman untuk native `<select>`, bukan seluruh custom select Ant Design.
+- Dropdown, menu, atau portal yang belum terbuka saat snapshot diambil bisa tidak masuk kandidat.
+- Icon-only button tanpa `aria-label`, text, atau atribut pembeda masih rawan gagal.
+- Table dengan banyak tombol identik tetap membutuhkan row context yang jelas.
+- Sistem fokus pada locator failure, bukan kegagalan logic bisnis aplikasi.
+- False healing dan patch success rate masih perlu dirapikan sebagai metrik eksperimen formal.
+
+## Arah Eksperimen Berikutnya
+
+Langkah berikutnya yang paling penting adalah membuat stress fixture yang lebih mirip OmniX/Ant Design.
+
+Fixture sebaiknya memuat:
+
+- dashboard layout,
+- sidebar panjang,
+- topbar,
+- filter form,
+- table 30-50 row,
+- tombol detail/edit/delete berulang,
+- modal form,
+- drawer filter,
+- class Ant Design-like,
+- hidden dan disabled elements,
+- duplicate text,
+- target elemen yang muncul jauh setelah banyak noise DOM.
+
+Sebelum menilai kualitas LLM, extractor dan ranker perlu diuji dulu dengan metrik:
+
+- `targetInTop10`
+- `targetInTop20`
+- `candidateCount`
+- `promptChars`
+- `fullDomChars`
+
+Prinsipnya sederhana: kalau target elemen tidak masuk daftar kandidat, kegagalan tidak bisa sepenuhnya dianggap sebagai kegagalan LLM.
 
 ## Nilai Penelitian
 
-Kontribusi utama proyek ini terletak pada kombinasi berikut:
+Kontribusi utama prototype ini ada pada kombinasi:
 
-- pemanfaatan LLM untuk memperbaiki locator UI secara kontekstual,
-- pemisahan antara runtime healing dan permanent healing,
-- validasi hasil healing sebelum perubahan diadopsi,
+- self-healing locator berbasis LLM,
+- candidate-based DOM context agar prompt lebih fokus,
+- validasi runtime sebelum locator dipakai ulang,
+- pemisahan runtime healing dan permanent healing,
 - auto-patching ke source test,
-- serta integrasi ke workflow CI/CD modern.
+- dan integrasi ke workflow CI/CD melalui Pull Request.
 
-Dengan demikian, proyek ini tidak hanya mencoba membuat test “tetap lulus”, tetapi juga berusaha menghasilkan perbaikan yang dapat diaudit dan dipermanenkan secara bertanggung jawab.
+Dengan desain ini, sistem tidak hanya membuat test mencoba lanjut, tetapi juga menghasilkan perubahan locator yang dapat dicek, diaudit, dan dipermanenkan.
 
-## Catatan
+## Dokumen Tambahan
 
-- Repo ini menggunakan **repo pribadi** untuk workflow patch, branch, commit, push, dan PR automation.
-- Aplikasi target penelitian berada pada konteks industri, tetapi eksperimen dijalankan dengan kontrol penuh dari sisi automation test.
-- Dokumentasi teknis internal tambahan tersedia di `AGENTS.md` dan `CLAUDE.md`.
+- `docs/targeted-dom-context-extraction.md` - brief teknis Phase 2 terbaru.
+- `AGENTS.md` - panduan untuk AI agent yang bekerja di repo ini.
+- `healing-results/` - output runtime setelah test berjalan.
 
 ## Kontak
 
