@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniX-like Stress — Invoice Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #333; }
+
+    /* Layout */
+    .ant-layout { display: flex; min-height: 100vh; }
+    .ant-layout-sider { width: 220px; background: #001529; color: #fff; flex-shrink: 0; }
+    .ant-layout-sider .logo { padding: 16px; font-size: 18px; font-weight: 700; color: #fff; border-bottom: 1px solid #0d2137; }
+    .ant-layout-main { flex: 1; display: flex; flex-direction: column; }
+    .ant-layout-header { background: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; border-bottom: 1px solid #f0f0f0; }
+    .ant-layout-content { padding: 24px; background: #f5f5f5; flex: 1; }
+
+    /* Menu */
+    .ant-menu { list-style: none; padding: 8px 0; }
+    .ant-menu-item { padding: 10px 24px; cursor: pointer; color: rgba(255,255,255,0.65); transition: color .2s; }
+    .ant-menu-item:hover, .ant-menu-item-selected { color: #fff; background: #1677ff; }
+    .ant-menu-item-group-title { padding: 8px 24px; color: rgba(255,255,255,0.35); font-size: 12px; text-transform: uppercase; }
+
+    /* Buttons */
+    .ant-btn { padding: 5px 16px; border-radius: 6px; cursor: pointer; border: 1px solid #d9d9d9; background: #fff; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+    .ant-btn-primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+    .ant-btn-link { border: none; color: #1677ff; background: none; padding: 0; }
+    .ant-btn-danger { color: #ff4d4f; border-color: #ff4d4f; }
+    .ant-btn-icon { border: none; background: none; cursor: pointer; padding: 4px; }
+    .ant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Form */
+    .ant-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px; }
+    .ant-form-item { display: flex; flex-direction: column; gap: 4px; }
+    .ant-form-item label { font-size: 13px; color: #666; }
+    .ant-input { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
+    .ant-select { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; background: #fff; }
+    .ant-input-number { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 6px; width: 140px; }
+
+    /* Table */
+    .ant-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+    .ant-table th, .ant-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; text-align: left; font-size: 13px; }
+    .ant-table thead th { background: #fafafa; font-weight: 600; }
+    .ant-table-actions { display: flex; gap: 8px; }
+    .ant-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .ant-tag-green { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+    .ant-tag-orange { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+    .ant-tag-red { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+
+    /* Pagination */
+    .ant-pagination { margin-top: 16px; display: flex; justify-content: flex-end; gap: 4px; }
+
+    /* Modal */
+    .ant-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000; }
+    .ant-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 8px; width: 520px; z-index: 1001; }
+    .ant-modal-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; }
+    .ant-modal-title { font-size: 16px; font-weight: 600; }
+    .ant-modal-body { padding: 24px; }
+    .ant-modal-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* Drawer */
+    .ant-drawer { position: fixed; top: 0; right: 0; width: 380px; height: 100vh; background: #fff; z-index: 1001; box-shadow: -4px 0 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+    .ant-drawer-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    .ant-drawer-title { font-size: 16px; font-weight: 600; }
+    .ant-drawer-body { padding: 24px; flex: 1; overflow-y: auto; }
+    .ant-drawer-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="ant-layout">
+
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <aside class="ant-layout-sider">
+    <div class="logo">OmniX CRM</div>
+    <ul class="ant-menu">
+      <li class="ant-menu-item-group-title">Main</li>
+      <li class="ant-menu-item" role="menuitem">Dashboard</li>
+      <li class="ant-menu-item ant-menu-item-selected" role="menuitem"
+          data-eval-target="sidebar-invoices">Invoices</li>
+      <li class="ant-menu-item" role="menuitem"
+          data-eval-target="sidebar-customers">Customers</li>
+      <li class="ant-menu-item" role="menuitem">Products</li>
+      <li class="ant-menu-item" role="menuitem">Orders</li>
+      <li class="ant-menu-item-group-title">Reports</li>
+      <li class="ant-menu-item" role="menuitem">Revenue</li>
+      <li class="ant-menu-item" role="menuitem">Sales Funnel</li>
+      <li class="ant-menu-item" role="menuitem">Conversion</li>
+      <li class="ant-menu-item" role="menuitem">Retention</li>
+      <li class="ant-menu-item-group-title">Settings</li>
+      <li class="ant-menu-item" role="menuitem">General</li>
+      <li class="ant-menu-item" role="menuitem">Team</li>
+      <li class="ant-menu-item" role="menuitem">Billing</li>
+      <li class="ant-menu-item" role="menuitem">Integrations</li>
+      <li class="ant-menu-item" role="menuitem">Notifications</li>
+    </ul>
+  </aside>
+
+  <div class="ant-layout-main">
+    <!-- ═══════ HEADER ═══════ -->
+    <header class="ant-layout-header">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <input class="ant-input" placeholder="Global search..." aria-label="Global search" style="width:260px;" />
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="ant-btn-icon" aria-label="Notifications"><span>🔔</span></button>
+        <button class="ant-btn-icon" aria-label="Help"><span>❓</span></button>
+        <button class="ant-btn" aria-label="Profile menu">Admin ▾</button>
+      </div>
+    </header>
+
+    <!-- ═══════ CONTENT ═══════ -->
+    <div class="ant-layout-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h1 style="font-size:22px;">Invoice Management</h1>
+        <div style="display:flex;gap:8px;">
+          <button class="ant-btn" aria-label="Open advanced filter"
+                  data-testid="btn-open-drawer">Advanced Filter</button>
+          <button class="ant-btn ant-btn-primary" data-testid="btn-create-invoice">+ New Invoice</button>
+          <button class="ant-btn" disabled
+                  data-eval-target="disabled-export-btn"
+                  data-testid="btn-export">Export CSV</button>
+        </div>
+      </div>
+
+      <!-- ═══════ FILTER FORM ═══════ -->
+      <div class="ant-form" data-testid="filter-form">
+        <div class="ant-form-item">
+          <label for="filter-customer">Customer</label>
+          <input id="filter-customer" class="ant-input"
+                 name="customerName" placeholder="Customer name..."
+                 aria-label="Filter customer name"
+                 data-testid="input-filter-customer"
+                 data-eval-target="customer-name-filter" />
+        </div>
+        <div class="ant-form-item">
+          <label for="filter-status">Status</label>
+          <select id="filter-status" class="ant-select"
+                  name="invoiceStatus" aria-label="Filter by status"
+                  data-testid="select-filter-status"
+                  data-eval-target="status-filter">
+            <option value="">All</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="ant-form-item">
+          <label for="filter-city">City</label>
+          <select id="filter-city" class="ant-select" name="city" aria-label="Filter by city">
+            <option value="">All Cities</option>
+            <option value="jakarta">Jakarta</option>
+            <option value="bandung">Bandung</option>
+            <option value="surabaya">Surabaya</option>
+            <option value="yogyakarta">Yogyakarta</option>
+          </select>
+        </div>
+        <div class="ant-form-item">
+          <button class="ant-btn ant-btn-primary"
+                  data-testid="btn-apply-filter"
+                  data-eval-target="apply-filter-btn">Apply Filter</button>
+        </div>
+        <div class="ant-form-item">
+          <button class="ant-btn" data-testid="btn-reset-filter">Reset</button>
+        </div>
+      </div>
+
+      <!-- Hidden input — negative case -->
+      <input class="ant-input hidden" type="text" name="hiddenField"
+             placeholder="Hidden field" aria-label="Hidden field"
+             data-eval-target="hidden-input" />
+
+      <!-- ═══════ TABLE ═══════ -->
+      <table class="ant-table" data-testid="invoice-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-row-key="1">
+            <td>1</td><td>INV-0001</td><td>Aldi Pratama</td><td>aldi@example.com</td><td>Rp 1.200.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-1" aria-label="Detail INV-0001">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-1" aria-label="Edit INV-0001">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-1" aria-label="Delete INV-0001">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="2">
+            <td>2</td><td>INV-0002</td><td>Budi Santoso</td><td>budi@example.com</td><td>Rp 850.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-2" aria-label="Detail INV-0002">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-2" aria-label="Edit INV-0002">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-2" aria-label="Delete INV-0002">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="3">
+            <td>3</td><td>INV-0003</td><td>Citra Dewi</td><td>citra@example.com</td><td>Rp 2.500.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-3" aria-label="Detail INV-0003">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-3" aria-label="Edit INV-0003">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-3" aria-label="Delete INV-0003">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="4">
+            <td>4</td><td>INV-0004</td><td>Deni Kurniawan</td><td>deni@example.com</td><td>Rp 430.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-4" aria-label="Detail INV-0004">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-4" aria-label="Edit INV-0004">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-4" aria-label="Delete INV-0004">Delete</button>
+            </td>
+          </tr>
+          <!-- Row 5: John Doe — ground truth target -->
+          <tr data-row-key="5">
+            <td>5</td><td>INV-0005</td><td>John Doe</td><td>john.doe@example.com</td><td>Rp 3.750.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-5" aria-label="Detail John Doe"
+                      data-eval-target="detail-row-john-doe">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-5" aria-label="Edit John Doe">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-5" aria-label="Delete John Doe">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="6">
+            <td>6</td><td>INV-0006</td><td>Eka Fitriani</td><td>eka@example.com</td><td>Rp 1.100.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-6" aria-label="Detail INV-0006">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-6" aria-label="Edit INV-0006">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-6" aria-label="Delete INV-0006">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="7">
+            <td>7</td><td>INV-0007</td><td>Fajar Hidayat</td><td>fajar@example.com</td><td>Rp 920.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-7" aria-label="Detail INV-0007">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-7" aria-label="Edit INV-0007">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-7" aria-label="Delete INV-0007">Delete</button>
+            </td>
+          </tr>
+          <!-- Row 8: Jane Smith — ground truth target -->
+          <tr data-row-key="8">
+            <td>8</td><td>INV-0008</td><td>Jane Smith</td><td>jane.smith@example.com</td><td>Rp 2.100.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-8" aria-label="Detail Jane Smith">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-8" aria-label="Edit Jane Smith"
+                      data-eval-target="edit-row-jane-smith">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-8" aria-label="Delete Jane Smith">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="9">
+            <td>9</td><td>INV-0009</td><td>Galih Purnama</td><td>galih@example.com</td><td>Rp 560.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-9" aria-label="Detail INV-0009">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-9" aria-label="Edit INV-0009">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-9" aria-label="Delete INV-0009">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="10">
+            <td>10</td><td>INV-0010</td><td>Hana Wijaya</td><td>hana@example.com</td><td>Rp 1.750.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-10" aria-label="Detail INV-0010">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-10" aria-label="Edit INV-0010">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-10" aria-label="Delete INV-0010">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="11">
+            <td>11</td><td>INV-0011</td><td>Irfan Maulana</td><td>irfan@example.com</td><td>Rp 340.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-11" aria-label="Detail INV-0011">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-11" aria-label="Edit INV-0011">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-11" aria-label="Delete INV-0011">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="12">
+            <td>12</td><td>INV-0012</td><td>Joko Susanto</td><td>joko@example.com</td><td>Rp 4.200.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-12" aria-label="Detail INV-0012">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-12" aria-label="Edit INV-0012">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-12" aria-label="Delete INV-0012">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="13">
+            <td>13</td><td>INV-0013</td><td>Kartika Sari</td><td>kartika@example.com</td><td>Rp 890.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-13" aria-label="Detail INV-0013">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-13" aria-label="Edit INV-0013">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-13" aria-label="Delete INV-0013">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="14">
+            <td>14</td><td>INV-0014</td><td>Lina Rahayu</td><td>lina@example.com</td><td>Rp 1.600.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-14" aria-label="Detail INV-0014">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-14" aria-label="Edit INV-0014">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-14" aria-label="Delete INV-0014">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="15">
+            <td>15</td><td>INV-0015</td><td>Made Arya</td><td>made@example.com</td><td>Rp 2.300.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-15" aria-label="Detail INV-0015">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-15" aria-label="Edit INV-0015">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-15" aria-label="Delete INV-0015">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="16">
+            <td>16</td><td>INV-0016</td><td>Nita Anggraeni</td><td>nita@example.com</td><td>Rp 510.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-16" aria-label="Detail INV-0016">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-16" aria-label="Edit INV-0016">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-16" aria-label="Delete INV-0016">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="17">
+            <td>17</td><td>INV-0017</td><td>Oscar Permadi</td><td>oscar@example.com</td><td>Rp 3.100.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-17" aria-label="Detail INV-0017">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-17" aria-label="Edit INV-0017">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-17" aria-label="Delete INV-0017">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="18">
+            <td>18</td><td>INV-0018</td><td>Putri Maharani</td><td>putri@example.com</td><td>Rp 770.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-18" aria-label="Detail INV-0018">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-18" aria-label="Edit INV-0018">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-18" aria-label="Delete INV-0018">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="19">
+            <td>19</td><td>INV-0019</td><td>Rizki Fadhli</td><td>rizki@example.com</td><td>Rp 1.900.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-19" aria-label="Detail INV-0019">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-19" aria-label="Edit INV-0019">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-19" aria-label="Delete INV-0019">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="20">
+            <td>20</td><td>INV-0020</td><td>Sinta Permata</td><td>sinta@example.com</td><td>Rp 2.800.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-20" aria-label="Detail INV-0020">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-20" aria-label="Edit INV-0020">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-20" aria-label="Delete INV-0020">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="21">
+            <td>21</td><td>INV-0021</td><td>Taufik Rahman</td><td>taufik@example.com</td><td>Rp 650.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-21" aria-label="Detail INV-0021">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-21" aria-label="Edit INV-0021">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-21" aria-label="Delete INV-0021">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="22">
+            <td>22</td><td>INV-0022</td><td>Umi Kalsum</td><td>umi@example.com</td><td>Rp 1.350.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-22" aria-label="Detail INV-0022">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-22" aria-label="Edit INV-0022">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-22" aria-label="Delete INV-0022">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="23">
+            <td>23</td><td>INV-0023</td><td>Vino Saputra</td><td>vino@example.com</td><td>Rp 4.800.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-23" aria-label="Detail INV-0023">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-23" aria-label="Edit INV-0023">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-23" aria-label="Delete INV-0023">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="24">
+            <td>24</td><td>INV-0024</td><td>Wulan Sari</td><td>wulan@example.com</td><td>Rp 980.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-24" aria-label="Detail INV-0024">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-24" aria-label="Edit INV-0024">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-24" aria-label="Delete INV-0024">Delete</button>
+            </td>
+          </tr>
+          <!-- Row 25: INV-0025 — hard case ground truth target (jauh di DOM) -->
+          <tr data-row-key="25">
+            <td>25</td><td>INV-0025</td><td>Xander Wijaya</td><td>xander@example.com</td><td>Rp 5.200.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-open-invoice-0025" aria-label="Open invoice INV-0025"
+                      data-eval-target="detail-row-inv-0025">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-25" aria-label="Edit INV-0025">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-25" aria-label="Delete INV-0025">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="26">
+            <td>26</td><td>INV-0026</td><td>Yanti Susanti</td><td>yanti@example.com</td><td>Rp 1.450.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-26" aria-label="Detail INV-0026">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-26" aria-label="Edit INV-0026">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-26" aria-label="Delete INV-0026">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="27">
+            <td>27</td><td>INV-0027</td><td>Zahra Amelia</td><td>zahra@example.com</td><td>Rp 3.300.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-27" aria-label="Detail INV-0027">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-27" aria-label="Edit INV-0027">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-27" aria-label="Delete INV-0027">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="28">
+            <td>28</td><td>INV-0028</td><td>Agus Setiawan</td><td>agus@example.com</td><td>Rp 720.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-28" aria-label="Detail INV-0028">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-28" aria-label="Edit INV-0028">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-28" aria-label="Delete INV-0028">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="29">
+            <td>29</td><td>INV-0029</td><td>Bayu Nugroho</td><td>bayu@example.com</td><td>Rp 2.900.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-29" aria-label="Detail INV-0029">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-29" aria-label="Edit INV-0029">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-29" aria-label="Delete INV-0029">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="30">
+            <td>30</td><td>INV-0030</td><td>Dewi Lestari</td><td>dewi.l@example.com</td><td>Rp 1.800.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-30" aria-label="Detail INV-0030">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-30" aria-label="Edit INV-0030">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-30" aria-label="Delete INV-0030">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="31">
+            <td>31</td><td>INV-0031</td><td>Eko Prasetyo</td><td>eko@example.com</td><td>Rp 410.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-31" aria-label="Detail INV-0031">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-31" aria-label="Edit INV-0031">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-31" aria-label="Delete INV-0031">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="32">
+            <td>32</td><td>INV-0032</td><td>Fitri Handayani</td><td>fitri@example.com</td><td>Rp 5.600.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-32" aria-label="Detail INV-0032">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-32" aria-label="Edit INV-0032">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-32" aria-label="Delete INV-0032">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="33">
+            <td>33</td><td>INV-0033</td><td>Gunawan Wibowo</td><td>gunawan@example.com</td><td>Rp 1.050.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-33" aria-label="Detail INV-0033">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-33" aria-label="Edit INV-0033">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-33" aria-label="Delete INV-0033">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="34">
+            <td>34</td><td>INV-0034</td><td>Hesti Wulandari</td><td>hesti@example.com</td><td>Rp 2.400.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-34" aria-label="Detail INV-0034">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-34" aria-label="Edit INV-0034">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-34" aria-label="Delete INV-0034">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="35">
+            <td>35</td><td>INV-0035</td><td>Ivan Saputra</td><td>ivan@example.com</td><td>Rp 3.900.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-35" aria-label="Detail INV-0035">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-35" aria-label="Edit INV-0035">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-35" aria-label="Delete INV-0035">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="36">
+            <td>36</td><td>INV-0036</td><td>Julia Rahmawati</td><td>julia@example.com</td><td>Rp 680.000</td>
+            <td><span class="ant-tag ant-tag-orange">Pending</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-36" aria-label="Detail INV-0036">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-36" aria-label="Edit INV-0036">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-36" aria-label="Delete INV-0036">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="37">
+            <td>37</td><td>INV-0037</td><td>Kevin Hartono</td><td>kevin@example.com</td><td>Rp 1.250.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-37" aria-label="Detail INV-0037">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-37" aria-label="Edit INV-0037">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-37" aria-label="Delete INV-0037">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="38">
+            <td>38</td><td>INV-0038</td><td>Lia Permatasari</td><td>lia@example.com</td><td>Rp 4.100.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-38" aria-label="Detail INV-0038">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-38" aria-label="Edit INV-0038">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-38" aria-label="Delete INV-0038">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="39">
+            <td>39</td><td>INV-0039</td><td>Mulyadi Saputra</td><td>mulyadi@example.com</td><td>Rp 590.000</td>
+            <td><span class="ant-tag ant-tag-red">Cancelled</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-39" aria-label="Detail INV-0039">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-39" aria-label="Edit INV-0039">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-39" aria-label="Delete INV-0039">Delete</button>
+            </td>
+          </tr>
+          <tr data-row-key="40">
+            <td>40</td><td>INV-0040</td><td>Nurul Hidayah</td><td>nurul@example.com</td><td>Rp 3.500.000</td>
+            <td><span class="ant-tag ant-tag-green">Paid</span></td>
+            <td class="ant-table-actions">
+              <button class="ant-btn ant-btn-link" data-testid="btn-detail-40" aria-label="Detail INV-0040">Detail</button>
+              <button class="ant-btn ant-btn-link" data-testid="btn-edit-40" aria-label="Edit INV-0040">Edit</button>
+              <button class="ant-btn ant-btn-link ant-btn-danger" data-testid="btn-delete-40" aria-label="Delete INV-0040">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="ant-pagination">
+        <button class="ant-btn" disabled>Previous</button>
+        <button class="ant-btn" aria-current="page">1</button>
+        <button class="ant-btn">2</button>
+        <button class="ant-btn">3</button>
+        <button class="ant-btn">4</button>
+        <button class="ant-btn">Next</button>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ═══════ MODAL: Edit Customer ═══════ -->
+<div class="ant-modal-mask"></div>
+<div class="ant-modal" role="dialog" aria-label="Edit Customer">
+  <div class="ant-modal-header">
+    <div class="ant-modal-title">Edit Customer</div>
+  </div>
+  <div class="ant-modal-body">
+    <div class="ant-form" style="flex-direction:column;">
+      <div class="ant-form-item">
+        <label for="modal-name">Name</label>
+        <input id="modal-name" class="ant-input" name="customerName" placeholder="Customer name" aria-label="Customer name" />
+      </div>
+      <div class="ant-form-item">
+        <label for="modal-email">Email</label>
+        <input id="modal-email" class="ant-input" name="customerEmail" placeholder="Customer email" aria-label="Customer email"
+               data-testid="input-modal-email"
+               data-eval-target="modal-email-input" />
+      </div>
+      <div class="ant-form-item">
+        <label for="modal-city">City</label>
+        <select id="modal-city" class="ant-select" name="customerCity" aria-label="Customer city">
+          <option value="">Select city</option>
+          <option value="jakarta">Jakarta</option>
+          <option value="bandung">Bandung</option>
+          <option value="surabaya">Surabaya</option>
+        </select>
+      </div>
+      <div class="ant-form-item">
+        <label for="modal-notes">Notes</label>
+        <textarea id="modal-notes" class="ant-input" name="notes" placeholder="Notes..." aria-label="Customer notes" rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="ant-modal-footer">
+    <button class="ant-btn" data-testid="btn-modal-cancel"
+            data-eval-target="cancel-modal-btn">Cancel</button>
+    <button class="ant-btn ant-btn-primary" data-testid="btn-modal-save" aria-label="Save customer"
+            data-eval-target="save-modal-btn">Save</button>
+  </div>
+</div>
+
+<!-- ═══════ DRAWER: Advanced Filter ═══════ -->
+<div class="ant-drawer" role="complementary" aria-label="Advanced Filter">
+  <div class="ant-drawer-header">
+    <div class="ant-drawer-title">Advanced Filter</div>
+    <button class="ant-btn-icon" aria-label="Close drawer"
+            data-eval-target="drawer-close-btn">&times;</button>
+  </div>
+  <div class="ant-drawer-body">
+    <div class="ant-form" style="flex-direction:column;">
+      <div class="ant-form-item">
+        <label for="drawer-min">Min Amount</label>
+        <input id="drawer-min" class="ant-input-number ant-input" type="number" name="minAmount"
+               placeholder="Min amount" aria-label="Minimum amount"
+               data-eval-target="drawer-min-amount" />
+      </div>
+      <div class="ant-form-item">
+        <label for="drawer-max">Max Amount</label>
+        <input id="drawer-max" class="ant-input-number ant-input" type="number" name="maxAmount"
+               placeholder="Max amount" aria-label="Maximum amount" />
+      </div>
+      <div class="ant-form-item">
+        <label for="drawer-payment">Payment Method</label>
+        <select id="drawer-payment" class="ant-select" name="paymentMethod" aria-label="Payment method">
+          <option value="">All</option>
+          <option value="transfer">Bank Transfer</option>
+          <option value="credit">Credit Card</option>
+          <option value="ewallet">E-Wallet</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="ant-drawer-footer">
+    <button class="ant-btn" data-testid="btn-drawer-reset">Reset</button>
+    <button class="ant-btn ant-btn-primary" data-testid="btn-drawer-apply" aria-label="Apply filter"
+            data-eval-target="drawer-apply-btn">Apply</button>
+  </div>
+</div>
+
+</body>
+</html>

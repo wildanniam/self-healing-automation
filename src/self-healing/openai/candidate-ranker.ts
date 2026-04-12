@@ -149,6 +149,12 @@ function scoreCandidate(candidate: CandidateElement, ctx: RankingContext): numbe
 
   // 6. Visibility bonus
   if (candidate.isVisible) score += 3;
+  if (candidate.isVisible === false) score -= 20;
+
+  // 6b. Disabled penalty untuk action yang membutuhkan elemen enabled.
+  if (candidate.isDisabled && ['click', 'fill', 'select'].includes(ctx.actionType)) {
+    score -= 20;
+  }
 
   // 7. Exact ID match dari selector (e.g., selector "#user-email" → id="user-email")
   const idMatch = ctx.oldSelector.match(/^#([\w-]+)$/);

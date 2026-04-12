@@ -339,6 +339,37 @@ Task ini dianggap selesai jika:
 - fallback lama tetap tersedia,
 - dan hasil test menunjukkan target benar masuk kandidat pada mayoritas skenario dummy.
 
+## Hasil Stress Validation (April 2026)
+
+Stress fixture `tests/fixtures/omni-like-stress.html` mensimulasikan dashboard OmniX-like dengan:
+- sidebar 15+ menu, header, filter form
+- table 40 row (120 tombol Detail/Edit/Delete)
+- modal Edit Customer, drawer Advanced Filter
+- hidden input, disabled button, duplicate text
+
+Dari 181 raw candidates, ranker memilih top 30. Prompt ~9KB vs full DOM ~41KB (rasio sekitar 23%).
+
+Hasil ranking per skenario:
+
+| Skenario | Kategori | Target Rank | Top 10 | Top 20 |
+| --- | --- | --- | --- | --- |
+| fill customer name filter | Easy | 1 | Ya | Ya |
+| fill email di modal | Easy | 1 | Ya | Ya |
+| select status filter | Easy | 1 | Ya | Ya |
+| click Save di modal | Medium | 1 | Ya | Ya |
+| click Apply di drawer | Medium | 1 | Ya | Ya |
+| click Edit Jane Smith | Medium | 1 | Ya | Ya |
+| click sidebar Customers | Medium | 1 | Ya | Ya |
+| click Detail John Doe (row 5) | Hard | 1 | Ya | Ya |
+| click Detail INV-0025 (row 25) | Hard | 1 | Ya | Ya |
+
+Negative cases:
+- Hidden input: terdeteksi `isVisible=false`, validator akan reject
+- Disabled button: terdeteksi `isDisabled=true`, validator akan reject untuk click
+- 40 tombol Detail identik: ranker membedakan lewat `aria-label`, `rowContext`, `data-testid`
+
+Kesimpulan: extractor dan ranker sudah cukup kuat untuk fixture stress ini. Target elemen masuk rank 1 di semua skenario karena atribut stabil, `aria-label`, `stepName`, dan `rowContext` tersedia. Pada aplikasi nyata di mana atribut kurang lengkap, ranking bisa lebih rendah.
+
 ## Catatan Penting Untuk Agent
 
 Jangan over-engineer.
@@ -351,4 +382,3 @@ Fokus pertama:
 4. test bisa membuktikan hasilnya.
 
 Jangan mengklaim akurasi LLM meningkat sebelum ada hasil eksperimen.
-

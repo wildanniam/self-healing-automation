@@ -10,64 +10,10 @@
  * Tidak memanggil OpenAI — murni test extractor dan ranker.
  */
 
-import * as path from 'path';
 import { test, expect } from '@playwright/test';
 import { extractCandidates, formatCandidatesForPrompt } from '../src/self-healing/openai/dom-context-extractor';
 import { rankCandidates } from '../src/self-healing/openai/candidate-ranker';
-import type { ActionType } from '../src/self-healing/types';
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function fixturePath(name: string): string {
-  return `file://${path.resolve(__dirname, 'fixtures', name)}`;
-}
-
-interface ExtractorMetrics {
-  targetInTop10: boolean;
-  targetInTop20: boolean;
-  targetRank: number | null;
-  candidateCount: number;
-  promptChars: number;
-  fullDomChars: number;
-}
-
-async function extractAndRank(
-  page: import('@playwright/test').Page,
-  opts: {
-    actionType: ActionType;
-    oldSelector: string;
-    stepName?: string;
-    evalTarget: string;
-  },
-): Promise<ExtractorMetrics> {
-  const rawCandidates = await extractCandidates(page, {
-    actionType: opts.actionType,
-  });
-
-  const ranked = rankCandidates(rawCandidates, {
-    oldSelector: opts.oldSelector,
-    stepName: opts.stepName,
-    actionType: opts.actionType,
-  });
-
-  const candidates = ranked.map(r => r.candidate);
-  const promptText = formatCandidatesForPrompt(candidates);
-  const fullDom = await page.content();
-
-  // Cari target di ranked list
-  const targetIndex = ranked.findIndex(
-    r => r.candidate._evalTarget === opts.evalTarget,
-  );
-
-  return {
-    targetInTop10: targetIndex >= 0 && targetIndex < 10,
-    targetInTop20: targetIndex >= 0 && targetIndex < 20,
-    targetRank: targetIndex >= 0 ? targetIndex + 1 : null,
-    candidateCount: ranked.length,
-    promptChars: promptText.length,
-    fullDomChars: fullDom.length,
-  };
-}
+import { fixturePath, extractAndRank } from './helpers/candidate-metrics';
 
 // ── Form Fixture Tests ───────────────────────────────────────────────────────
 

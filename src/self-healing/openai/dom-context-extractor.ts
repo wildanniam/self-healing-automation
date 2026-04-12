@@ -32,6 +32,8 @@ export interface CandidateElement {
   containerContext?: string;
   /** Apakah elemen visible di viewport */
   isVisible?: boolean;
+  /** Apakah elemen disabled (button/input/select) */
+  isDisabled?: boolean;
   /** Suggested locators siap pakai: #id, [data-testid=...], [name=...], dll */
   suggestedLocators?: string[];
   /** Marker ground truth untuk testing — TIDAK dikirim ke LLM */
@@ -84,9 +86,18 @@ export async function extractCandidates(
       const tag = el.tagName.toLowerCase();
 
       const style = window.getComputedStyle(htmlEl);
-      const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
+      const hasLayoutBox = htmlEl.offsetWidth > 0 ||
+        htmlEl.offsetHeight > 0 ||
+        htmlEl.getClientRects().length > 0;
+      const isVisible = style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        hasLayoutBox;
 
-      const candidate: CandidateElement = { tag, isVisible };
+      const isDisabled = (htmlEl as HTMLButtonElement | HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).disabled === true ||
+        el.hasAttribute('disabled') ||
+        el.getAttribute('aria-disabled') === 'true';
+
+      const candidate: CandidateElement = { tag, isVisible, isDisabled };
 
       if (el.id) candidate.id = el.id;
       const nameAttr = el.getAttribute('name');
@@ -160,10 +171,15 @@ export async function extractCandidates(
       // Row context
       const row = el.closest('tr');
       if (row) {
-        const firstCell = row.querySelector('td, th');
-        if (firstCell) {
-          const rowText = (firstCell as HTMLElement).textContent?.trim().slice(0, 40);
-          if (rowText) candidate.rowContext = rowText;
+        const rowCells = Array.from(row.querySelectorAll('td, th')) as HTMLElement[];
+        const rowTextParts = rowCells.slice(0, 6).map((cell: HTMLElement) => {
+          const clone = cell.cloneNode(true) as HTMLElement;
+          clone.querySelectorAll('button, a, input, select, textarea').forEach((child: Element) => child.remove());
+          return clone.textContent?.replace(/\s+/g, ' ').trim();
+        }).filter(Boolean) as string[];
+
+        if (rowTextParts.length > 0) {
+          candidate.rowContext = rowTextParts.join(' | ').slice(0, 160);
         }
       }
 
@@ -235,6 +251,7 @@ export function formatCandidateForPrompt(candidate: CandidateElement, index: num
   if (candidate.rowContext) parts.push(`row="${candidate.rowContext}"`);
   if (candidate.containerContext) parts.push(`container="${candidate.containerContext}"`);
   if (candidate.isVisible === false) parts.push(`[hidden]`);
+  if (candidate.isDisabled === true) parts.push(`[disabled]`);
   if (candidate.suggestedLocators && candidate.suggestedLocators.length > 0) {
     parts.push(`locators=[${candidate.suggestedLocators.join(' | ')}]`);
   }

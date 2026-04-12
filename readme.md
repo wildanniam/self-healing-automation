@@ -123,7 +123,7 @@ Dengan cara ini, LLM tidak diminta membaca seluruh halaman. LLM diarahkan memili
 | Phase 4 - Auto-patching | Implemented | `post-heal` dapat mengganti locator di file test berdasarkan hasil healing |
 | Phase 4 - GitHub PR automation | Implemented | Branch, commit, push, dan PR creator sudah tersedia |
 | Phase 5 - CI/CD & metrics | Implemented (basic) | GitHub Actions, artifact upload, report, dan metrics dasar sudah tersedia |
-| Experiment readiness | In progress | Perlu stress fixture yang lebih kompleks untuk validasi terhadap pola OmniX/Ant Design |
+| Stress validation | Validated | Stress fixture 40-row dashboard (181 kandidat), target masuk rank 1 di semua skenario easy/medium/hard. Lihat `docs/targeted-dom-context-extraction.md` |
 
 ## Struktur Repository
 
@@ -281,7 +281,7 @@ npm run type-check
 Untuk test utama self-healing:
 
 ```bash
-npx playwright test tests/locator-validator.spec.ts tests/action-failed.spec.ts tests/dom-context-extractor.spec.ts tests/file-patcher.spec.ts tests/example.spec.ts --project=chromium
+npx playwright test tests/locator-validator.spec.ts tests/action-failed.spec.ts tests/dom-context-extractor.spec.ts tests/dom-context-extractor-stress.spec.ts tests/file-patcher.spec.ts tests/example.spec.ts --project=chromium
 ```
 
 Untuk metrics dan git helper:
